@@ -125,8 +125,11 @@
             html += `
                 <footer class="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 mt-auto transition-colors duration-300">
                     <div class="max-w-6xl mx-auto px-4 py-8 flex flex-col md:flex-row items-center justify-between text-center md:text-left gap-4">
-                        <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400 font-medium">
-                            <span class="text-xl" title="Venezuela">🇻🇪</span> Creado por Jesús Arvelo
+                        <div class="flex flex-col items-center md:items-start">
+                            <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400 font-medium">
+                                <span class="text-xl" title="Venezuela">🇻🇪</span> Creado por Jesús Arvelo
+                            </div>
+                            <span class="text-xs text-slate-400 dark:text-slate-500 mt-1">(V. 1.0.1)</span>
                         </div>
                         <div class="flex flex-col items-center md:items-end">
                             <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">© ${new Date().getFullYear()} Arvelo Maestro PDF. Todos los derechos reservados.</p>
@@ -331,10 +334,13 @@
                     <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden">
                         <div class="px-6 py-4 border-b dark:border-slate-800 flex justify-between bg-slate-50 dark:bg-slate-800/50"><h2 class="text-xl font-bold dark:text-white">Términos de Uso</h2><button id="close-terms-x" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button></div>
                         <div class="p-6 overflow-y-auto flex-grow text-slate-600 dark:text-slate-300 text-sm space-y-4">
-                            <p><strong>1. Privacidad:</strong> Tus archivos se procesan de manera temporal.</p>
-                            <p><strong>2. Propiedad:</strong> Conservas los derechos de tus archivos. El código es propiedad de Jesús Arvelo.</p>
+                            <p><strong>1. Aceptación:</strong> Al usar Arvelo Maestro PDF, aceptas estos términos.</p>
+                            <p><strong>2. Privacidad:</strong> Procesamiento temporal. Cero almacenamiento en servidores. Tus archivos nunca salen de tu ordenador.</p>
+                            <p><strong>3. Propiedad:</strong> Conservas los derechos de tus archivos. El código es propiedad de Jesús Arvelo.</p>
+                            <p><strong>4. Limitación de Responsabilidad:</strong> Herramienta ofrecida "tal cual". No nos hacemos responsables por pérdida de datos. Mantén backups.</p>
+                            <p><strong>5. Legislación:</strong> Leyes de la República Bolivariana de Venezuela.</p>
                         </div>
-                        <div class="px-6 py-4 border-t dark:border-slate-800 flex justify-end"><button id="close-terms-btn" class="bg-blue-600 text-white py-2 px-6 rounded-lg">Aceptar</button></div>
+                        <div class="px-6 py-4 border-t dark:border-slate-800 flex justify-end"><button id="close-terms-btn" class="bg-blue-600 text-white py-2 px-6 rounded-lg">Entendido y Aceptado</button></div>
                     </div>
                 </div>
             `;
@@ -346,12 +352,13 @@
             addEvt('theme-toggle', 'click', () => { document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); render(); });
             addEvt('nav-logo', 'click', () => { state.activeTool = null; resetWorkspace(); });
             addEvt('back-btn', 'click', () => { state.activeTool = null; resetWorkspace(); });
-            addEvt('open-terms-btn', 'click', () => { state.isTermsModalOpen = true; render(); });
-            addEvt('close-terms-btn', 'click', () => { state.isTermsModalOpen = false; render(); });
-            addEvt('close-terms-x', 'click', () => { state.isTermsModalOpen = false; render(); });
+            addEvt('open-terms-btn', 'click', () => { state.isTermsModalOpen = true; render(); document.body.style.overflow = 'hidden'; });
             
+            const closeModal = () => { state.isTermsModalOpen = false; render(); document.body.style.overflow = 'auto'; };
+            addEvt('close-terms-btn', 'click', closeModal);
+            addEvt('close-terms-x', 'click', closeModal);
             const overlay = document.getElementById('terms-modal-overlay');
-            if(overlay) overlay.onclick = (e) => { if (e.target === overlay) { state.isTermsModalOpen = false; render(); } };
+            if(overlay) overlay.onclick = (e) => { if (e.target === overlay) closeModal(); };
 
             addEvt('subscribe-form', 'submit', (e) => {
                 e.preventDefault();
@@ -395,14 +402,33 @@
         }
 
         function handleFiles(newFiles) {
+            const MAX_SIZE = 101 * 1024 * 1024; // 101 MB limite
+            const validFiles = [];
+
+            for (let file of newFiles) {
+                if (file.size > MAX_SIZE) {
+                    alert(`⚠️ Archivo muy grande\n\nEl archivo "${file.name}" pesa más de 101 MB.\n\nPara evitar que tu navegador se quede sin memoria, esta herramienta no admite archivos superiores a 101 MB.`);
+                } else {
+                    validFiles.push(file);
+                }
+            }
+
+            if (validFiles.length === 0) return;
+
             let startIdx = 0;
-            if (state.activeTool.multiple) { startIdx = state.files.length; state.files = [...state.files, ...newFiles]; } 
-            else { state.files = [newFiles[0]]; state.filePreviews = []; state.fileRotations = []; }
+            if (state.activeTool.multiple) { 
+                startIdx = state.files.length; 
+                state.files = [...state.files, ...validFiles]; 
+            } else { 
+                state.files = [validFiles[0]]; 
+                state.filePreviews = []; 
+                state.fileRotations = []; 
+            }
             
-            for (let i = 0; i < newFiles.length; i++) {
+            for (let i = 0; i < validFiles.length; i++) {
                 const targetIdx = startIdx + i;
                 state.fileRotations[targetIdx] = 0;
-                generatePreview(newFiles[i], targetIdx);
+                generatePreview(validFiles[i], targetIdx);
             }
             render();
         }
