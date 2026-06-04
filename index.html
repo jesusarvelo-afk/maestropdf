@@ -103,19 +103,13 @@
                         </div>
                         
                         <div class="flex items-center gap-4">
-                            <!-- Insignia de Privacidad (Texto/Badge) -->
-                            <div class="hidden md:flex items-center gap-1.5 px-3 py-1 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs font-bold border border-green-200 dark:border-green-800/50" title="Procesamiento 100% en tu navegador">
-                                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                <span class="dark:text-[#39ff14] dark:drop-shadow-[0_0_5px_rgba(57,255,20,0.3)]">Privacidad Absoluta</span>
-                            </div>
-
                             ${state.activeTool ? `
                             <button id="back-btn" class="flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
                                 <i data-lucide="arrow-left" class="w-4 h-4 pointer-events-none"></i> <span class="hidden sm:inline">Volver</span>
                             </button>
                             ` : ''}
 
-                            <!-- Botón de Donaciones -->
+                            <!-- Botón de Donaciones Ko-fi -->
                             <a href="https://ko-fi.com/jesusarvelo/tip" target="_blank" class="hidden sm:flex items-center gap-2 px-4 py-2 bg-[#FF5E5B] hover:bg-[#ff4542] text-white font-bold rounded-full transition-all shadow-sm">
                                 Donaciones <i data-lucide="coffee" class="w-4 h-4 pointer-events-none"></i>
                             </a>
@@ -188,7 +182,13 @@
                         La solución definitiva para tus <span class="text-blue-600 dark:text-blue-500">PDFs</span>
                     </h1>
                     <p class="text-lg text-slate-600 dark:text-slate-400 transition-colors">
-                        Herramientas profesionales, gratuitas y seguras. Todo el procesamiento se realiza en tu dispositivo.
+                        Todas las herramientas que necesitas para trabajar con archivos PDF en un solo lugar. Rápido, seguro y fácil de usar directamente en tu navegador.
+                    </p>
+                    
+                    <!-- TEXTO DE PRIVACIDAD SOLICITADO -->
+                    <p class="mt-6 text-green-600 dark:text-[#39ff14] font-semibold flex items-center justify-center gap-2 drop-shadow-sm text-sm sm:text-base bg-green-50 dark:bg-green-900/20 py-2 px-4 rounded-xl border border-green-200 dark:border-green-800/50 inline-flex mx-auto">
+                        <i data-lucide="lock" class="w-5 h-5"></i>
+                        Privacidad Absoluta: Tus archivos nunca salen de tu ordenador
                     </p>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch mb-12">
