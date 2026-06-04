@@ -103,9 +103,10 @@
                         </div>
                         
                         <div class="flex items-center gap-4">
+                            <!-- Insignia de Privacidad (Texto/Badge) -->
                             <div class="hidden md:flex items-center gap-1.5 px-3 py-1 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs font-bold border border-green-200 dark:border-green-800/50" title="Procesamiento 100% en tu navegador">
                                 <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                <span style="color: ${isDark ? '#39ff14' : ''}; text-shadow: ${isDark ? '0 0 5px rgba(57, 255, 20, 0.3)' : 'none'};">Privacidad Absoluta</span>
+                                <span class="dark:text-[#39ff14] dark:drop-shadow-[0_0_5px_rgba(57,255,20,0.3)]">Privacidad Absoluta</span>
                             </div>
 
                             ${state.activeTool ? `
@@ -114,6 +115,7 @@
                             </button>
                             ` : ''}
 
+                            <!-- Botón de Donaciones -->
                             <a href="https://ko-fi.com/jesusarvelo/tip" target="_blank" class="hidden sm:flex items-center gap-2 px-4 py-2 bg-[#FF5E5B] hover:bg-[#ff4542] text-white font-bold rounded-full transition-all shadow-sm">
                                 Donaciones <i data-lucide="coffee" class="w-4 h-4 pointer-events-none"></i>
                             </a>
@@ -468,6 +470,7 @@
             const compressionSelect = document.getElementById('compression-level');
             if(compressionSelect) compressionSelect.addEventListener('change', (e) => state.compressionLevel = e.target.value);
 
+            // Fetch Robusto usando URLSearchParams
             const sugForm = document.getElementById('sug-form');
             if (sugForm) {
                 sugForm.addEventListener('submit', (e) => {
@@ -477,10 +480,25 @@
                     
                     if (msg.trim()) {
                         state.sugerenciaStatus = 'sending'; render();
-                        const formData = new URLSearchParams(); formData.append('mensaje', msg); formData.append('correo', email);
-                        fetch(URL_SUGERENCIAS, { method: 'POST', mode: 'no-cors', body: formData })
-                        .then(() => { state.sugerenciaStatus = 'success'; render(); setTimeout(() => { state.isSugerenciasOpen = false; render(); }, 2500); showToast("Sugerencia enviada."); })
-                        .catch(() => { state.sugerenciaStatus = 'idle'; render(); showToast("Error de conexión.", "error"); });
+                        const formData = new URLSearchParams(); 
+                        formData.append('mensaje', msg); 
+                        formData.append('correo', email);
+                        
+                        fetch(URL_SUGERENCIAS, { 
+                            method: 'POST', 
+                            mode: 'no-cors', 
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: formData.toString()
+                        })
+                        .then(() => { 
+                            state.sugerenciaStatus = 'success'; render(); 
+                            setTimeout(() => { state.isSugerenciasOpen = false; render(); }, 2500); 
+                            showToast("Sugerencia enviada."); 
+                        })
+                        .catch(() => { 
+                            state.sugerenciaStatus = 'idle'; render(); 
+                            showToast("Error de conexión.", "error"); 
+                        });
                     }
                 });
             }
