@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="es" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arvelo Maestro PDF</title>
+    
+    <!-- Enlace para el Manifest PWA (generado dinámicamente) -->
+    <link rel="manifest" id="pwa-manifest">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'], } } }
+        }
+    </script>
+    
+    <!-- Librerías base -->
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .animate-spin-slow { animation: spin 2s linear infinite; }
+        
+        /* Animaciones para los Toasts */
+        @keyframes slideInUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes slideOutDown { from { transform: translateY(0); opacity: 1; } to { transform: translateY(100%); opacity: 0; } }
+        .toast-enter { animation: slideInUp 0.3s ease-out forwards; }
+        .toast-exit { animation: slideOutDown 0.3s ease-in forwards; }
+        
+        body, nav, .tool-card, #dropzone { transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease; }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col font-sans text-slate-900 dark:text-slate-100 selection:bg-blue-200 dark:selection:bg-blue-900 transition-colors duration-300">
+
+    <div id="app" class="flex flex-col flex-grow"></div>
+    <!-- Contenedor para Notificaciones Flotantes (Toasts) -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <script>
+        const manifest = {
+            name: "Arvelo Maestro PDF",
+            short_name: "Maestro PDF",
+            description: "Herramientas profesionales para PDF en tu navegador",
+            start_url: ".",
+            display: "standalone",
+            background_color: "#ffffff",
+            theme_color: "#2563eb",
+            icons: [{
+                src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='512' height='512'%3E%3Crect width='24' height='24' rx='4' fill='%232563eb'/%3E%3Ctext x='12' y='17' font-family='sans-serif' font-size='9' font-weight='bold' fill='white' text-anchor='middle'%3EAJJ%3C/text%3E%3C/svg%3E",
+                sizes: "512x512",
+                type: "image/svg+xml"
+            }]
+        };
+        const manifestBlob = new Blob([JSON.stringify(manifest)], {type: 'application/manifest+json'});
+        document.getElementById('pwa-manifest').href = URL.createObjectURL(manifestBlob);
+
+        if ('serviceWorker' in navigator) {
+            const swCode = `self.addEventListener('fetch', () => {});`;
+            const swBlob = new Blob([swCode], { type: 'application/javascript' });
+            navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
+        }
+
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+
+        const TOOLS = [
+            { id: 'merge', title: 'Unir PDF', description: 'Une varios archivos (PDF o Imágenes) en un solo documento PDF.', icon: 'layers', iconColor: 'text-blue-500 dark:text-blue-400', color: 'hover:border-blue-500 dark:hover:border-blue-400', accept: '.pdf, image/png, image/jpeg', multiple: true },
+            { id: 'split', title: 'Dividir PDF', description: 'Extrae páginas específicas de tu documento PDF a un ZIP.', icon: 'scissors', iconColor: 'text-orange-500 dark:text-orange-400', color: 'hover:border-orange-500 dark:hover:border-orange-400', accept: '.pdf', multiple: false },
+            { id: 'remove-pages', title: 'Eliminar Páginas', description: 'Borra hojas que no necesites y guarda el resto del PDF.', icon: 'file-minus', iconColor: 'text-rose-500 dark:text-rose-400', color: 'hover:border-rose-500 dark:hover:border-rose-400', accept: '.pdf', multiple: false },
+            { id: 'number-pages', title: 'Numerar Páginas', description: 'Añade números de página a tu documento automáticamente.', icon: 'hash', iconColor: 'text-teal-500 dark:text-teal-400', color: 'hover:border-teal-500 dark:hover:border-teal-400', accept: '.pdf', multiple: false },
+            { id: 'compress', title: 'Comprimir PDF', description: 'Reduce el tamaño de tu PDF optimizando sus imágenes internas.', icon: 'minimize-2', iconColor: 'text-green-500 dark:text-green-400', color: 'hover:border-green-500 dark:hover:border-green-400', accept: '.pdf', multiple: false },
+            { id: 'to-pdf', title: 'Crear PDF', description: 'Crea archivos PDF a partir de textos (.txt) o imágenes.', icon: 'file-plus-2', iconColor: 'text-purple-500 dark:text-purple-400', color: 'hover:border-purple-500 dark:hover:border-purple-400', accept: '.txt,.doc,.docx,.xls,.xlsx,.jpg,.png', multiple: true },
+            { id: 'from-pdf', title: 'PDF a Word / Excel / JPG', description: 'Convierte tus archivos PDF a formatos editables o imágenes.', icon: 'arrow-right-left', iconColor: 'text-red-500 dark:text-red-400', color: 'hover:border-red-500 dark:hover:border-red-400', accept: '.pdf', multiple: false }
+        ];
+
+        let state = {
+            activeTool: null, files: [], filePreviews: [], fileRotations: [], isDragging: false,
+            processingState: 'idle', errorMessage: '', downloadUrl: null, downloadName: '',
+            selectedExportFormat: 'docx', splitRange: '', removeRange: '', compressionLevel: '50',
+            isTermsModalOpen: false, subscriptionStatus: 'idle', subscriptionEmail: '',
+            progress: 0, progressText: ''
+        };
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const isError = type === 'error';
+            toast.className = `toast-enter flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-white text-sm font-medium ${isError ? 'bg-red-500' : 'bg-slate-800 dark:bg-slate-700'}`;
+            toast.innerHTML = `<i data-lucide="${isError ? 'alert-circle' : 'check-circle'}" class="w-5 h-5"></i> ${message}`;
+            container.appendChild(toast);
+            lucide.createIcons({root: toast});
+            
+            setTimeout(() => {
+                toast.classList.remove('toast-enter');
+                toast.classList.add('toast-exit');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        function render() {
+            const app = document.getElementById('app');
+            const isDark = document.documentElement.classList.contains('dark');
+            let html = '';
+
+            html += `
+                <nav class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10 shadow-sm transition-colors duration-300">
+                    <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+                        <div class="flex items-center gap-2 cursor-pointer" id="nav-logo">
+                            <i data-lucide="file-text" class="w-8 h-8 text-blue-600 dark:text-blue-500"></i>
+                            <span class="text-xl font-bold tracking-tight text-slate-900 dark:text-white hidden sm:block">Arvelo Maestro PDF</span>
+                        </div>
+                        
+                        <div class="flex items-center gap-3">
+                            ${state.activeTool ? `
+                            <button id="back-btn" class="flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors relative z-20" title="Volver al menú principal">
+                                <i data-lucide="arrow-left" class="w-4 h-4 pointer-events-none"></i> <span class="hidden sm:inline">Volver</span>
+                            </button>
+                            ` : ''}
+                            
+                            <a href="https://ko-fi.com/jesusarvelo/tip" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center gap-2 px-3 py-1.5 rounded-full bg-rose-50 dark:bg-rose-900/20 text-rose-500 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-colors relative z-20" title="Apóyame en Ko-fi">
+                                <span class="text-sm font-medium hidden sm:inline">Donaciones</span>
+                                <i data-lucide="coffee" class="w-4 h-4 pointer-events-none"></i>
+                            </a>
+                            
+                            <button id="theme-toggle" class="p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors relative z-20" aria-label="Cambiar tema" title="Alternar Modo Oscuro/Claro">
+                                <i data-lucide="${isDark ? 'sun' : 'moon'}" class="w-5 h-5 pointer-events-none"></i>
+                            </button>
+                        </div>
+                    </div>
+                </nav>
+            `;
+
+            html += '<main class="flex-grow flex flex-col">';
+            if (!state.activeTool) html += renderHome();
+            else html += renderWorkspace();
+            html += '</main>';
+
+            html += `
+                <footer class="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 mt-auto transition-colors duration-300">
+                    <div class="max-w-6xl mx-auto px-4 py-8 flex flex-col md:flex-row items-center justify-between text-center md:text-left gap-4">
+                        <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400 font-medium">
+                            <span class="text-xl" title="Venezuela">🇻🇪</span> Creado por Jesús Arvelo
+                        </div>
+                        <div class="flex flex-col items-center md:items-end">
+                            <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">© ${new Date().getFullYear()} Arvelo Maestro PDF. Todos los derechos reservados.</p>
+                            <button id="open-terms-btn" class="text-sm text-blue-600 dark:text-blue-400 hover:underline transition-colors">Términos y Condiciones de Uso</button>
+                        </div>
+                    </div>
+                </footer>
+            `;
+
+            if (state.isTermsModalOpen) html += renderTermsModal();
+
+            app.innerHTML = html;
+            lucide.createIcons();
+            attachListeners();
+        }
+
+        function renderHome() {
+            let cardsHtml = TOOLS.map(tool => `
+                <div data-id="${tool.id}" class="tool-card flex flex-col h-full bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-1 ${tool.color}">
+                    <div class="bg-slate-50 dark:bg-slate-900/50 w-14 h-14 rounded-xl flex items-center justify-center mb-4 transition-colors">
+                        <i data-lucide="${tool.icon}" class="w-7 h-7 ${tool.iconColor}"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-2 transition-colors">${tool.title}</h3>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed transition-colors flex-grow">${tool.description}</p>
+                </div>
+            `).join('');
+
+            return `
+                <div class="max-w-6xl mx-auto px-4 py-12 flex-grow">
+                    <div class="text-center mb-16">
+                        <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-4 transition-colors">Arvelo Maestro <span class="text-blue-600 dark:text-blue-500">PDF</span></h1>
+                        <p class="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto transition-colors mb-6">Todas las herramientas que necesitas para trabajar con archivos PDF en un solo lugar. Rápido, seguro y fácil de usar directamente en tu navegador.</p>
+                        
+                        <div class="inline-flex items-center gap-2 bg-green-50 dark:bg-slate-800 border border-green-200 dark:border-[#39ff14]/30 px-4 py-2 rounded-full shadow-sm" title="Procesamiento 100% en el navegador">
+                            <i data-lucide="lock" class="w-4 h-4 text-green-600 dark:text-[#39ff14]"></i>
+                            <span class="text-sm font-semibold text-green-700 dark:text-[#39ff14] tracking-wide" style="text-shadow: 0 0 8px rgba(57, 255, 20, 0.1);">Privacidad Absoluta: Tus archivos nunca salen de tu ordenador</span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch mb-20">
+                        ${cardsHtml}
+                    </div>
+                    
+                    <div class="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl p-8 md:p-12 text-center shadow-xl relative overflow-hidden">
+                        <div class="absolute top-0 right-0 -mr-8 -mt-8 w-40 h-40 rounded-full bg-white opacity-10 pointer-events-none"></div>
+                        <div class="relative z-10 max-w-2xl mx-auto">
+                            <span class="inline-block py-1 px-4 rounded-full bg-blue-500/30 text-blue-100 text-xs font-bold uppercase tracking-wider mb-4 border border-blue-400/30">Próximamente</span>
+                            <h2 class="text-3xl font-bold text-white mb-4">¡Lleva Maestro PDF en tu bolsillo!</h2>
+                            <p class="text-blue-100 mb-8 text-base">Déjanos tu correo para ser de los primeros en probar nuestra nueva <strong>App para Android</strong> y recibir futuras actualizaciones.</p>
+                            ${state.subscriptionStatus === 'success' ? `
+                                <div class="bg-white/10 border border-white/20 rounded-xl p-4 flex items-center justify-center gap-3 text-white max-w-md mx-auto backdrop-blur-sm"><i data-lucide="check-circle-2" class="w-6 h-6 text-green-400"></i><span class="font-medium">¡Gracias! Te hemos añadido a la lista.</span></div>
+                            ` : `
+                                <form id="subscribe-form" class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto relative">
+                                    <div class="relative flex-grow">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i data-lucide="mail" class="h-5 w-5 text-blue-200"></i></div>
+                                        <input type="email" id="subscriber-email" required placeholder="tu@correo.com" class="w-full pl-10 pr-4 py-3 rounded-xl border border-white/20 focus:ring-2 focus:ring-white/50 bg-white/10 text-white placeholder-blue-200 outline-none backdrop-blur-sm transition-all shadow-inner" value="${state.subscriptionEmail}">
+                                    </div>
+                                    <button type="submit" class="bg-white text-blue-700 hover:bg-blue-50 font-bold py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg min-w-[140px]">
+                                        ${state.subscriptionStatus === 'subscribing' ? `<i data-lucide="loader-2" class="w-5 h-5 animate-spin-slow"></i>` : `Suscribirme <i data-lucide="send" class="w-4 h-4"></i>`}
+                                    </button>
+                                </form>
+                            `}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderWorkspace() {
+            const tool = state.activeTool;
+            let workspaceContent = '';
+
+            if (state.processingState === 'idle') {
+                workspaceContent = `
+                    <div class="p-8">
+                        <div id="dropzone" class="border-2 border-dashed rounded-2xl p-10 text-center transition-all duration-200 cursor-pointer
+                            ${state.isDragging ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-slate-300 dark:border-slate-600 hover:border-slate-400 bg-slate-50 dark:bg-slate-800/50'}">
+                            <input type="file" id="file-input" class="hidden" accept="${tool.accept}" ${tool.multiple ? 'multiple' : ''} />
+                            <div class="flex justify-center mb-4"><i data-lucide="upload-cloud" class="w-16 h-16 ${state.isDragging ? 'text-blue-500' : 'text-slate-400'}"></i></div>
+                            <h3 class="text-xl font-semibold text-slate-700 dark:text-slate-200 mb-2">Arrastra tus archivos aquí</h3>
+                            <p class="text-slate-500 dark:text-slate-400 mb-6">o haz clic para seleccionar de tu dispositivo</p>
+                            <button id="select-files-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-8 rounded-xl transition-colors shadow-sm">Seleccionar Archivos</button>
+                            <p class="text-xs text-slate-400 mt-4">Formatos soportados: ${tool.accept}</p>
+                        </div>
+
+                        ${state.files.length > 0 ? `
+                        <div class="mt-8">
+                            <h4 class="font-semibold text-slate-700 dark:text-slate-300 mb-4">Archivos listos para procesar:</h4>
+                            <ul class="space-y-3 mb-6">
+                                ${state.files.map((file, idx) => `
+                                <li class="flex items-center justify-between bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+                                    <div class="flex items-center gap-3 overflow-hidden">
+                                        ${state.filePreviews[idx] 
+                                            ? `<div class="w-12 h-12 flex-shrink-0 bg-white dark:bg-slate-700 rounded overflow-hidden flex items-center justify-center border border-slate-200 shadow-sm"><img src="${state.filePreviews[idx]}" class="max-w-full max-h-full object-contain" style="transform: rotate(${state.fileRotations[idx] || 0}deg); transition: transform 0.3s ease;" /></div>`
+                                            : `<div class="w-12 h-12 flex-shrink-0 flex items-center justify-center transition-transform duration-300" style="transform: rotate(${state.fileRotations[idx] || 0}deg);"><i data-lucide="${(file.type === 'application/pdf' || file.name.endsWith('.pdf')) ? 'loader-2' : 'file-text'}" class="${(file.type === 'application/pdf' || file.name.endsWith('.pdf')) ? 'animate-spin text-blue-500' : 'text-slate-400'} w-6 h-6"></i></div>`
+                                        }
+                                        <div class="flex flex-col overflow-hidden">
+                                            <span class="font-medium text-slate-700 dark:text-slate-200 truncate" title="${file.name}">${file.name}</span>
+                                            <span class="text-xs text-slate-500">(${(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-1">
+                                        ${(state.filePreviews[idx] || file.type === 'application/pdf' || file.name.endsWith('.pdf') || file.type.startsWith('image/')) ? `
+                                        <button data-rotate="${idx}" class="rotate-file-btn text-blue-500 hover:text-blue-600 p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg" title="Girar archivo 90°"><i data-lucide="rotate-cw" class="w-5 h-5 pointer-events-none"></i></button>
+                                        ` : ''}
+                                        <button data-index="${idx}" class="remove-file-btn text-slate-400 hover:text-red-500 p-2 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg" title="Eliminar"><i data-lucide="x" class="w-5 h-5 pointer-events-none"></i></button>
+                                    </div>
+                                </li>
+                                `).join('')}
+                            </ul>
+
+                            ${tool.id === 'split' ? `
+                            <div class="mt-6 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Páginas a extraer (ej. 1, 3, 5-8):</label>
+                                <input type="text" id="split-range" value="${state.splitRange}" placeholder="Ej: 1, 3, 5-8" class="w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-lg p-2.5">
+                            </div>` : ''}
+                            
+                            ${tool.id === 'remove-pages' ? `
+                            <div class="mt-6 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Páginas a eliminar (ej. 2, 4-6):</label>
+                                <input type="text" id="remove-range" value="${state.removeRange}" placeholder="Ej: 2, 4-6" class="w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-lg p-2.5">
+                            </div>` : ''}
+
+                            ${tool.id === 'compress' ? `
+                            <div class="mt-6 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Nivel de compresión:</label>
+                                <select id="compression-level" class="w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-lg p-2.5">
+                                    <option value="25" ${state.compressionLevel === '25' ? 'selected' : ''}>25% - Calidad Excelente</option>
+                                    <option value="50" ${state.compressionLevel === '50' ? 'selected' : ''}>50% - Calidad Media</option>
+                                    <option value="75" ${state.compressionLevel === '75' ? 'selected' : ''}>75% - Calidad Básica (Mayor compresión)</option>
+                                </select>
+                            </div>` : ''}
+
+                            ${tool.id === 'from-pdf' ? `
+                            <div class="mt-6 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Convertir a:</label>
+                                <select id="export-format" class="w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-lg p-2.5">
+                                    <option value="docx" ${state.selectedExportFormat === 'docx' ? 'selected' : ''}>Word (.docx)</option>
+                                    <option value="xlsx" ${state.selectedExportFormat === 'xlsx' ? 'selected' : ''}>Excel (.xlsx)</option>
+                                    <option value="jpg" ${state.selectedExportFormat === 'jpg' ? 'selected' : ''}>Imagen (.jpg)</option>
+                                    <option value="png" ${state.selectedExportFormat === 'png' ? 'selected' : ''}>Imagen (.png)</option>
+                                </select>
+                            </div>` : ''}
+
+                            <div class="mt-6 flex justify-end border-t border-slate-200 dark:border-slate-700 pt-6">
+                                <button id="process-btn" class="bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 text-white font-bold py-3 px-8 rounded-xl flex items-center gap-2 shadow-md">
+                                    Procesar Ahora <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                                </button>
+                            </div>
+                        </div>` : ''}
+                    </div>
+                `;
+            } else if (state.processingState === 'processing') {
+                workspaceContent = `
+                    <div class="p-16 text-center flex flex-col items-center justify-center">
+                        <i data-lucide="loader-2" class="w-16 h-16 text-blue-600 dark:text-blue-500 animate-spin-slow mb-6"></i>
+                        <h3 class="text-2xl font-bold text-slate-800 dark:text-white mb-2">Procesando archivos...</h3>
+                        <p class="text-slate-500 mb-6">${state.progressText || 'Por favor, espera.'}</p>
+                        <div class="w-full max-w-md bg-slate-200 rounded-full h-3 dark:bg-slate-700 overflow-hidden shadow-inner">
+                            <div class="bg-blue-600 h-3 rounded-full transition-all duration-300 ease-out" style="width: ${state.progress}%"></div>
+                        </div>
+                        <p class="text-sm font-semibold text-blue-600 mt-2">${state.progress}%</p>
+                    </div>
+                `;
+            } else if (state.processingState === 'done') {
+                workspaceContent = `
+                    <div class="p-16 text-center">
+                        <div class="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6"><i data-lucide="check-circle-2" class="w-10 h-10 text-green-600"></i></div>
+                        <h3 class="text-3xl font-bold text-slate-800 dark:text-white mb-4">¡Completado!</h3>
+                        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                            <a href="${state.downloadUrl}" download="${state.downloadName}" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-xl flex items-center gap-2"><i data-lucide="download" class="w-5 h-5"></i> Descargar</a>
+                            <button id="reset-btn" class="bg-white border-2 border-slate-200 text-slate-700 font-bold py-4 px-8 rounded-xl dark:bg-slate-800 dark:border-slate-700 dark:text-white">Otra tarea</button>
+                        </div>
+                    </div>
+                `;
+            } else if (state.processingState === 'error') {
+                workspaceContent = `
+                    <div class="p-16 text-center">
+                        <div class="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-6"><i data-lucide="alert-circle" class="w-10 h-10 text-red-600"></i></div>
+                        <h3 class="text-2xl font-bold text-slate-800 dark:text-white mb-4">Ocurrió un error</h3>
+                        <p class="text-red-500 mb-8 max-w-md mx-auto bg-red-50 p-4 rounded-lg border border-red-100 dark:bg-red-900/20">${state.errorMessage}</p>
+                        <button id="reset-btn-err" class="bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-8 rounded-xl">Intentar nuevamente</button>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="max-w-4xl mx-auto px-4 py-12 flex-grow w-full">
+                    <div class="text-center mb-10">
+                        <div class="flex justify-center mb-4"><i data-lucide="${tool.icon}" class="w-12 h-12 ${tool.iconColor}"></i></div>
+                        <h2 class="text-3xl font-bold text-slate-900 dark:text-white mb-2">${tool.title}</h2>
+                        <p class="text-slate-600 dark:text-slate-400">${tool.description}</p>
+                    </div>
+                    <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden w-full">
+                        ${workspaceContent}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderTermsModal() {
+            return `
+                <div id="terms-modal-overlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden">
+                        <div class="px-6 py-4 border-b dark:border-slate-800 flex justify-between bg-slate-50 dark:bg-slate-800"><h2 class="text-xl font-bold dark:text-white">Términos de Uso</h2><button id="close-terms-x" class="text-slate-400"><i data-lucide="x" class="w-6 h-6"></i></button></div>
+                        <div class="p-6 overflow-y-auto flex-grow text-slate-600 dark:text-slate-300 text-sm space-y-4">
+                            <p><strong>1. Privacidad:</strong> Tus archivos se procesan localmente.</p>
+                            <p><strong>2. Propiedad:</strong> Conservas los derechos de tus archivos. El código es propiedad de Jesús Arvelo.</p>
+                        </div>
+                        <div class="px-6 py-4 border-t dark:border-slate-800 flex justify-end"><button id="close-terms-btn" class="bg-blue-600 text-white py-2 px-6 rounded-lg">Aceptar</button></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function attachListeners() {
+            const addEvt = (id, type, handler) => { const el = document.getElementById(id); if(el) el.addEventListener(type, handler); };
+            
+            addEvt('theme-toggle', 'click', () => { document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); render(); });
+            addEvt('nav-logo', 'click', () => { state.activeTool = null; resetWorkspace(); });
+            addEvt('back-btn', 'click', () => { state.activeTool = null; resetWorkspace(); });
+            addEvt('open-terms-btn', 'click', () => { state.isTermsModalOpen = true; render(); });
+            addEvt('close-terms-btn', 'click', () => { state.isTermsModalOpen = false; render(); });
+            addEvt('close-terms-x', 'click', () => { state.isTermsModalOpen = false; render(); });
+            
+            document.querySelectorAll('.tool-card').forEach(c => c.onclick = () => { state.activeTool = TOOLS.find(t => t.id === c.dataset.id); resetWorkspace(); });
+            
+            addEvt('subscribe-form', 'submit', (e) => {
+                e.preventDefault();
+                state.subscriptionEmail = document.getElementById('subscriber-email').value;
+                state.subscriptionStatus = 'subscribing'; render();
+                fetch("https://script.google.com/macros/s/AKfycbzFcQubKPubo319RkUJDeqelQxqjVZ3p2wttrc-hjdP-Rh2V8rTxG0NIgIaQiEgPr11TA/exec", { method: 'POST', mode: 'no-cors', body: new URLSearchParams({ 'email': state.subscriptionEmail }) })
+                .then(() => { state.subscriptionStatus = 'success'; showToast('Suscripción exitosa'); render(); })
+                .catch(() => { state.subscriptionStatus = 'idle'; showToast('Error', 'error'); render(); });
+            });
+
+            if (state.activeTool && state.processingState === 'idle') {
+                const dz = document.getElementById('dropzone');
+                if (dz) {
+                    dz.onclick = (e) => { if(e.target.id !== 'select-files-btn') document.getElementById('file-input').click(); };
+                    dz.ondragover = (e) => { e.preventDefault(); if(!state.isDragging) { state.isDragging = true; render(); } };
+                    dz.ondragleave = (e) => { e.preventDefault(); state.isDragging = false; render(); };
+                    dz.ondrop = (e) => { e.preventDefault(); state.isDragging = false; if (e.dataTransfer.files.length) handleFiles(Array.from(e.dataTransfer.files)); };
+                }
+                addEvt('select-files-btn', 'click', (e) => { e.stopPropagation(); document.getElementById('file-input').click(); });
+                addEvt('file-input', 'change', (e) => { if (e.target.files.length) handleFiles(Array.from(e.target.files)); });
+                
+                addEvt('export-format', 'change', (e) => state.selectedExportFormat = e.target.value);
+                addEvt('split-range', 'input', (e) => state.splitRange = e.target.value);
+                addEvt('remove-range', 'input', (e) => state.removeRange = e.target.value);
+                addEvt('compression-level', 'change', (e) => state.compressionLevel = e.target.value);
+                
+                addEvt('process-btn', 'click', processFiles);
+                
+                document.querySelectorAll('.remove-file-btn').forEach(btn => btn.onclick = (e) => {
+                    const idx = parseInt(btn.dataset.index);
+                    state.files.splice(idx, 1); state.filePreviews.splice(idx, 1); state.fileRotations.splice(idx, 1); render();
+                });
+                document.querySelectorAll('.rotate-file-btn').forEach(btn => btn.onclick = (e) => {
+                    const idx = parseInt(btn.dataset.rotate);
+                    state.fileRotations[idx] = ((state.fileRotations[idx] || 0) + 90) % 360; render();
+                });
+            }
+            addEvt('reset-btn', 'click', resetWorkspace);
+            addEvt('reset-btn-err', 'click', resetWorkspace);
+        }
+
+        function handleFiles(newFiles) {
+            let startIdx = 0;
+            if (state.activeTool.multiple) { startIdx = state.files.length; state.files = [...state.files, ...newFiles]; } 
+            else { state.files = [newFiles[0]]; state.filePreviews = []; state.fileRotations = []; }
+            
+            for (let i = 0; i < newFiles.length; i++) {
+                const targetIdx = startIdx + i;
+                state.fileRotations[targetIdx] = 0;
+                generatePreview(newFiles[i], targetIdx);
+            }
+            render();
+        }
+
+        async function generatePreview(file, index) {
+            if (file.type.startsWith('image/')) {
+                state.filePreviews[index] = URL.createObjectURL(file); render();
+            } else if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                    const page = await pdfDoc.getPage(1);
+                    const viewport = page.getViewport({ scale: 0.3 }); 
+                    const canvas = document.createElement('canvas');
+                    canvas.width = viewport.width; canvas.height = viewport.height;
+                    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+                    state.filePreviews[index] = canvas.toDataURL('image/jpeg', 0.7);
+                    canvas.width = 0; canvas.height = 0; // Limpiar memoria
+                    render();
+                } catch (e) { state.filePreviews[index] = ''; render(); }
+            }
+        }
+
+        function resetWorkspace() {
+            state.files = []; state.filePreviews = []; state.fileRotations = [];
+            state.processingState = 'idle'; state.downloadUrl = null; state.progress = 0; render();
+        }
+
+        function createDownload(data, filename, type) {
+            const blob = new Blob([data], { type: type });
+            state.downloadUrl = URL.createObjectURL(blob);
+            state.downloadName = filename;
+            state.processingState = 'done';
+            showToast('Proceso exitoso');
+            render();
+        }
+
+        function parsePageRange(rangeStr, maxPages) {
+            const indices = new Set();
+            if (!rangeStr.trim()) return [];
+            const parts = rangeStr.split(',');
+            for (let part of parts) {
+                part = part.trim();
+                if (part.includes('-')) {
+                    const [s, e] = part.split('-');
+                    let start = parseInt(s), end = parseInt(e);
+                    if (!isNaN(start) && !isNaN(end)) {
+                        start = Math.max(1, start); end = Math.min(maxPages, end);
+                        for (let i = start; i <= end; i++) indices.add(i - 1);
+                    }
+                } else {
+                    const num = parseInt(part);
+                    if (!isNaN(num) && num >= 1 && num <= maxPages) indices.add(num - 1);
+                }
+            }
+            return Array.from(indices).sort((a, b) => a - b);
+        }
+
+        const yieldThread = () => new Promise(r => setTimeout(r, 0)); // Para animar barra de progreso
+        function updateProgress(percent, text) { state.progress = percent; state.progressText = text; render(); }
+
+        async function processFiles() {
+            if (!state.files.length) return;
+            state.processingState = 'processing'; state.progress = 0; render();
+            try {
+                if (state.activeTool.id === 'merge') await processMerge();
+                else if (state.activeTool.id === 'split') await processSplit();
+                else if (state.activeTool.id === 'remove-pages') await processRemovePages();
+                else if (state.activeTool.id === 'number-pages') await processNumberPages();
+                else if (state.activeTool.id === 'compress') await processCompress();
+                else if (state.activeTool.id === 'to-pdf') await processCreatePdf();
+                else if (state.activeTool.id === 'from-pdf') await processFromPdf();
+            } catch (error) {
+                state.errorMessage = 'El archivo tiene un error o el rango es inválido.';
+                state.processingState = 'error'; render();
+            }
+        }
+
+        async function processMerge() {
+            const { PDFDocument, degrees } = window.PDFLib;
+            const mergedPdf = await PDFDocument.create();
+            for (let i = 0; i < state.files.length; i++) {
+                updateProgress(Math.round((i / state.files.length) * 100), `Fusionando...`); await yieldThread();
+                const file = state.files[i]; const angle = state.fileRotations[i] || 0;
+                if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+                    const pdf = await PDFDocument.load(await file.arrayBuffer());
+                    const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+                    copiedPages.forEach((page) => {
+                        if (angle !== 0) page.setRotation(degrees((page.getRotation().angle + angle) % 360));
+                        mergedPdf.addPage(page);
+                    });
+                } else if (file.type.startsWith('image/')) {
+                    let image = file.type.includes('png') ? await mergedPdf.embedPng(await file.arrayBuffer()) : await mergedPdf.embedJpg(await file.arrayBuffer());
+                    let pWidth = (angle === 90 || angle === 270) ? image.height : image.width;
+                    let pHeight = (angle === 90 || angle === 270) ? image.width : image.height;
+                    const page = mergedPdf.addPage([pWidth, pHeight]);
+                    if (angle === 0) page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
+                    else if (angle === 90) page.drawImage(image, { x: pWidth, y: 0, width: image.width, height: image.height, rotate: degrees(90) });
+                    else if (angle === 180) page.drawImage(image, { x: pWidth, y: pHeight, width: image.width, height: image.height, rotate: degrees(180) });
+                    else if (angle === 270) page.drawImage(image, { x: 0, y: pHeight, width: image.width, height: image.height, rotate: degrees(270) });
+                }
+            }
+            updateProgress(99, "Guardando..."); await yieldThread();
+            createDownload(await mergedPdf.save(), 'Unido.pdf', 'application/pdf');
+        }
+
+        async function processSplit() {
+            const { PDFDocument } = window.PDFLib;
+            const originalPdf = await PDFDocument.load(await state.files[0].arrayBuffer());
+            const pagesToExtract = parsePageRange(state.splitRange, originalPdf.getPageCount());
+            if (!pagesToExtract.length) throw new Error("Rango inválido");
+            if (pagesToExtract.length === 1) {
+                const newPdf = await PDFDocument.create();
+                newPdf.addPage((await newPdf.copyPages(originalPdf, [pagesToExtract[0]]))[0]);
+                createDownload(await newPdf.save(), `Pagina_${pagesToExtract[0] + 1}.pdf`, 'application/pdf');
+            } else {
+                const zip = new JSZip();
+                for (let i = 0; i < pagesToExtract.length; i++) {
+                    updateProgress(Math.round((i / pagesToExtract.length) * 100), `Extrayendo...`); await yieldThread();
+                    const singlePdf = await PDFDocument.create();
+                    singlePdf.addPage((await singlePdf.copyPages(originalPdf, [pagesToExtract[i]]))[0]);
+                    zip.file(`Pagina_${pagesToExtract[i] + 1}.pdf`, await singlePdf.save());
+                }
+                updateProgress(99, "Comprimiendo..."); await yieldThread();
+                createDownload(await zip.generateAsync({type:"blob"}), 'Separadas.zip', 'application/zip');
+            }
+        }
+
+        async function processRemovePages() {
+            const { PDFDocument } = window.PDFLib;
+            const originalPdf = await PDFDocument.load(await state.files[0].arrayBuffer());
+            const total = originalPdf.getPageCount();
+            const toRemove = new Set(parsePageRange(state.removeRange, total));
+            const toKeep = [];
+            for (let i = 0; i < total; i++) { if (!toRemove.has(i)) toKeep.push(i); }
+            if (!toKeep.length) throw new Error("Faltan páginas");
+            
+            updateProgress(50, "Borrando páginas..."); await yieldThread();
+            const newPdf = await PDFDocument.create();
+            const copiedPages = await newPdf.copyPages(originalPdf, toKeep);
+            copiedPages.forEach(p => newPdf.addPage(p));
+            updateProgress(99, "Guardando..."); await yieldThread();
+            createDownload(await newPdf.save(), 'Limpio.pdf', 'application/pdf');
+        }
+
+        async function processNumberPages() {
+            const { PDFDocument, rgb, StandardFonts } = window.PDFLib;
+            const pdf = await PDFDocument.load(await state.files[0].arrayBuffer());
+            const font = await pdf.embedFont(StandardFonts.HelveticaBold);
+            const pages = pdf.getPages();
+            for (let i = 0; i < pages.length; i++) {
+                updateProgress(Math.round((i / pages.length) * 100), `Numerando...`); await yieldThread();
+                const page = pages[i]; const { width } = page.getSize();
+                page.drawText(String(i + 1), { x: width / 2 - 5, y: 20, size: 14, font, color: rgb(0,0,0) });
+            }
+            updateProgress(99, "Guardando..."); await yieldThread();
+            createDownload(await pdf.save(), 'Numerado.pdf', 'application/pdf');
+        }
+
+        async function processCompress() {
+            const file = state.files[0]; const level = parseInt(state.compressionLevel);
+            const pdfDoc = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+            const { PDFDocument } = window.PDFLib; const newPdf = await PDFDocument.create();
+            let imgQuality = level === 25 ? 0.8 : (level === 75 ? 0.3 : 0.5);
+
+            for (let i = 1; i <= pdfDoc.numPages; i++) {
+                updateProgress(Math.round((i / pdfDoc.numPages) * 100), `Optimizando...`); await yieldThread();
+                const page = await pdfDoc.getPage(i);
+                const viewport = page.getViewport({ scale: 1.5 }); 
+                const canvas = document.createElement('canvas');
+                canvas.width = viewport.width; canvas.height = viewport.height;
+                await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+                
+                const newImg = await newPdf.embedJpg(canvas.toDataURL('image/jpeg', imgQuality));
+                newPdf.addPage([newImg.width, newImg.height]).drawImage(newImg, { x: 0, y: 0, width: newImg.width, height: newImg.height });
+                canvas.width = 0; canvas.height = 0; // Optimización de memoria
+            }
+            updateProgress(99, "Guardando..."); await yieldThread();
+            createDownload(await newPdf.save(), `Comprimido_${file.name}`, 'application/pdf');
+        }
+
+        async function processCreatePdf() {
+            const { PDFDocument, StandardFonts, rgb, degrees } = window.PDFLib;
+            const newPdf = await PDFDocument.create();
+            const font = await newPdf.embedFont(StandardFonts.Helvetica);
+
+            for (let i = 0; i < state.files.length; i++) {
+                updateProgress(Math.round((i / state.files.length) * 100), `Convirtiendo...`); await yieldThread();
+                const file = state.files[i]; const angle = state.fileRotations[i] || 0;
+                const ext = file.name.split('.').pop().toLowerCase();
+                const arrBuf = await file.arrayBuffer();
+
+                if (ext === 'txt') {
+                    const lines = new TextDecoder("utf-8").decode(arrBuf).split('\n');
+                    let page = newPdf.addPage(); let { height } = page.getSize(); let y = height - 50;
+                    for (const line of lines) {
+                        if (y < 50) { page = newPdf.addPage(); y = height - 50; }
+                        try { page.drawText(line.replace(/\r/g,''), { x: 50, y, size: 12, font, color: rgb(0,0,0) }); } catch(e){}
+                        y -= 15;
+                    }
+                } else if (['jpg', 'jpeg', 'png'].includes(ext)) {
+                    let img = ext === 'png' ? await newPdf.embedPng(arrBuf) : await newPdf.embedJpg(arrBuf);
+                    let w = (angle===90||angle===270) ? img.height : img.width, h = (angle===90||angle===270) ? img.width : img.height;
+                    const page = newPdf.addPage([w, h]);
+                    if (angle===0) page.drawImage(img, { x:0, y:0, width:img.width, height:img.height });
+                    else if (angle===90) page.drawImage(img, { x:w, y:0, width:img.width, height:img.height, rotate: degrees(90) });
+                    else if (angle===180) page.drawImage(img, { x:w, y:h, width:img.width, height:img.height, rotate: degrees(180) });
+                    else if (angle===270) page.drawImage(img, { x:0, y:h, width:img.width, height:img.height, rotate: degrees(270) });
+                } else {
+                    const p = newPdf.addPage(); p.drawText(`Archivo: ${file.name} (Requiere backend)`, { x: 50, y: 700, size: 12, font });
+                }
+            }
+            updateProgress(99, "Guardando..."); await yieldThread();
+            createDownload(await newPdf.save(), 'Creado.pdf', 'application/pdf');
+        }
+
+        async function processFromPdf() {
+            const file = state.files[0]; const format = state.selectedExportFormat;
+            const pdfDoc = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+            updateProgress(30, `Extrayendo a ${format.toUpperCase()}...`); await yieldThread();
+
+            if (format === 'jpg' || format === 'png') {
+                const page = await pdfDoc.getPage(1); const viewport = page.getViewport({ scale: 2.0 }); 
+                const canvas = document.createElement('canvas'); canvas.width = viewport.width; canvas.height = viewport.height;
+                await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+                const mime = format === 'png' ? 'image/png' : 'image/jpeg';
+                createDownload(await (await fetch(canvas.toDataURL(mime, 1.0))).arrayBuffer(), `Imagen.${format}`, mime);
+            } else {
+                let html = "", excel = "";
+                for (let i = 1; i <= pdfDoc.numPages; i++) {
+                    updateProgress(Math.round((i / pdfDoc.numPages) * 80) + 10, `Leyendo...`); await yieldThread();
+                    const text = (await (await pdfDoc.getPage(i)).getTextContent()).items.map(t => t.str).join(' ');
+                    html += `<p>${text}</p>`; excel += `<tr><td><b>Página ${i}</b></td><td>${text}</td></tr>`;
+                }
+                const content = format === 'docx' 
+                    ? `<html xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"></head><body>${html}</body></html>`
+                    : `<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"></head><body><table border="1">${excel}</table></body></html>`;
+                createDownload(content, `Convertido.${format === 'docx' ? 'doc' : 'xls'}`, format === 'docx' ? 'application/msword' : 'application/vnd.ms-excel');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', render);
+    </script>
+</body>
+</html>
