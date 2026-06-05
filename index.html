@@ -101,7 +101,7 @@
                 icon: 'file-plus-2',
                 iconColor: 'text-purple-500 dark:text-purple-400',
                 color: 'hover:border-purple-500 dark:hover:border-purple-400 hover:shadow-purple-100 dark:hover:shadow-purple-900/20',
-                accept: '.txt,.doc,.docx,.xls,.xlsx,.jpg,.png',
+                accept: '.txt, .doc, .docx, .xls, .xlsx, .jpg, .jpeg, .png, image/jpeg, image/png',
                 multiple: true
             },
             {
@@ -133,6 +133,16 @@
                 color: 'hover:border-teal-500 dark:hover:border-teal-400 hover:shadow-teal-100 dark:hover:shadow-teal-900/20',
                 accept: '.pdf',
                 multiple: false
+            },
+            {
+                id: 'convert-webp',
+                title: 'Convertir WEBP',
+                description: 'Cambia imágenes WEBP a formatos clásicos como JPG, JPEG o PNG.',
+                icon: 'image',
+                iconColor: 'text-indigo-500 dark:text-indigo-400',
+                color: 'hover:border-indigo-500 dark:hover:border-indigo-400 hover:shadow-indigo-100 dark:hover:shadow-indigo-900/20',
+                accept: '.webp, image/webp',
+                multiple: false
             }
         ];
 
@@ -140,19 +150,18 @@
         let state = {
             activeTool: null,
             files: [],
+            filePreviews: [],
+            fileRotations: [],
             isDragging: false,
             processingState: 'idle', 
             errorMessage: '',
             downloadUrl: null,
             downloadName: '',
             selectedExportFormat: 'docx',
+            selectedImageFormat: 'jpg', // Formato de exportación para WEBP
             splitRange: '', 
             compressionLevel: '50',
             isTermsModalOpen: false,
-            isContactOpen: false,
-            contactMessage: '',
-            contactEmail: '',
-            contactStatus: 'idle',
             subscriptionStatus: 'idle', 
             subscriptionEmail: ''
         };
@@ -352,13 +361,29 @@
                                 ${state.files.map((file, idx) => `
                                 <li class="flex items-center justify-between bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 transition-colors">
                                     <div class="flex items-center gap-3 overflow-hidden">
-                                        <i data-lucide="file-text" class="w-5 h-5 text-slate-400 dark:text-slate-500 flex-shrink-0"></i>
-                                        <span class="font-medium text-slate-700 dark:text-slate-200 truncate transition-colors">${file.name}</span>
-                                        <span class="text-xs text-slate-400 dark:text-slate-500 ml-2 transition-colors">(${(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                                        ${state.filePreviews[idx] 
+                                            ? `<div class="w-12 h-12 flex-shrink-0 bg-slate-200 dark:bg-slate-700 rounded overflow-hidden flex items-center justify-center border border-slate-300 dark:border-slate-600">
+                                                   <img src="${state.filePreviews[idx]}" class="max-w-full max-h-full object-contain" style="transform: rotate(${state.fileRotations[idx] || 0}deg); transition: transform 0.3s ease;" />
+                                               </div>`
+                                            : `<div class="w-12 h-12 flex-shrink-0 flex items-center justify-center transition-transform duration-300" style="transform: rotate(${state.fileRotations[idx] || 0}deg);">
+                                                   <i data-lucide="file-text" class="w-8 h-8 text-slate-400 dark:text-slate-500"></i>
+                                               </div>`
+                                        }
+                                        <div class="flex flex-col truncate">
+                                            <span class="font-medium text-slate-700 dark:text-slate-200 truncate transition-colors">${file.name}</span>
+                                            <span class="text-xs text-slate-400 dark:text-slate-500 transition-colors">(${(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                                        </div>
                                     </div>
-                                    <button data-index="${idx}" class="remove-file-btn text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors p-1 z-20 relative">
-                                        <i data-lucide="x" class="w-5 h-5 pointer-events-none"></i>
-                                    </button>
+                                    <div class="flex items-center gap-2">
+                                        ${(state.filePreviews[idx] || file.type === 'application/pdf' || file.name.endsWith('.pdf')) ? `
+                                        <button data-rotate="${idx}" class="rotate-file-btn text-blue-500 hover:text-blue-600 transition-colors p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800/50" title="Girar archivo 90°">
+                                            <i data-lucide="rotate-cw" class="w-5 h-5 pointer-events-none"></i>
+                                        </button>
+                                        ` : ''}
+                                        <button data-index="${idx}" class="remove-file-btn text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors p-2 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg" title="Eliminar archivo">
+                                            <i data-lucide="x" class="w-5 h-5 pointer-events-none"></i>
+                                        </button>
+                                    </div>
                                 </li>
                                 `).join('')}
                             </ul>
@@ -390,6 +415,17 @@
                                     <option value="25" ${state.compressionLevel === '25' ? 'selected' : ''}>25% - Calidad Excelente (Menos compresión)</option>
                                     <option value="50" ${state.compressionLevel === '50' ? 'selected' : ''}>50% - Calidad Media (Equilibrio ideal)</option>
                                     <option value="75" ${state.compressionLevel === '75' ? 'selected' : ''}>75% - Calidad Básica (Mayor compresión)</option>
+                                </select>
+                            </div>
+                            ` : ''}
+
+                            ${tool.id === 'convert-webp' ? `
+                            <div class="mt-6 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Convertir a formato:</label>
+                                <select id="image-export-format" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 transition-colors">
+                                    <option value="jpg" ${state.selectedImageFormat === 'jpg' ? 'selected' : ''}>JPG (.jpg)</option>
+                                    <option value="jpeg" ${state.selectedImageFormat === 'jpeg' ? 'selected' : ''}>JPEG (.jpeg)</option>
+                                    <option value="png" ${state.selectedImageFormat === 'png' ? 'selected' : ''}>PNG (.png)</option>
                                 </select>
                             </div>
                             ` : ''}
@@ -500,7 +536,7 @@
                                 <h4 class="text-lg font-bold mb-2 text-slate-800 dark:text-white">4. Propiedad Intelectual y Derechos de Autor</h4>
                                 <ul class="list-disc pl-5 space-y-2">
                                     <li><strong class="text-slate-700 dark:text-slate-200">Tus Archivos:</strong> Tú conservas el 100% de los derechos de autor y de propiedad intelectual sobre cualquier documento, imagen o texto que subas o generes a través de la herramienta.</li>
-                                    <li><strong class="text-slate-700 dark:text-slate-200">La Aplicación:</strong> Todo el código fuente, diseño, estructura, interfaz y el nombre de Arvelo Maestro PDF son propiedad intelectual exclusiva de Jesús Arvelo. Queda estrictamente prohibida la copia, reproducción, modificación o distribución comercial del aplicativo sin autorización previa.</li>
+                                    <li><strong class="text-slate-700 dark:text-slate-200">La Aplicación:</strong> Todo el código fuente, diseño, structure, interfaz y el nombre de Arvelo Maestro PDF son propiedad intelectual exclusiva de Jesús Arvelo. Queda estrictamente prohibida la copia, reproducción, modificación o distribución comercial del aplicativo sin autorización previa.</li>
                                 </ul>
                             </section>
                             <section>
@@ -791,6 +827,9 @@
                 const formatSelect = document.getElementById('export-format');
                 if (formatSelect) formatSelect.onchange = (e) => { state.selectedExportFormat = e.target.value; };
 
+                const imgFormatSelect = document.getElementById('image-export-format');
+                if (imgFormatSelect) imgFormatSelect.onchange = (e) => { state.selectedImageFormat = e.target.value; };
+
                 const splitRangeInput = document.getElementById('split-range');
                 if (splitRangeInput) splitRangeInput.oninput = (e) => { state.splitRange = e.target.value; };
 
@@ -801,10 +840,20 @@
                 if (resetBtn) resetBtn.onclick = resetWorkspace;
                 if (resetBtnErr) resetBtnErr.onclick = resetWorkspace;
 
+                document.querySelectorAll('.rotate-file-btn').forEach(btn => {
+                    btn.onclick = (e) => {
+                        const index = parseInt(e.currentTarget.getAttribute('data-rotate'));
+                        state.fileRotations[index] = ((state.fileRotations[index] || 0) + 90) % 360;
+                        render();
+                    };
+                });
+
                 document.querySelectorAll('.remove-file-btn').forEach(btn => {
                     btn.onclick = (e) => {
                         const index = parseInt(e.currentTarget.getAttribute('data-index'));
                         state.files.splice(index, 1);
+                        state.filePreviews.splice(index, 1);
+                        state.fileRotations.splice(index, 1);
                         render();
                     };
                 });
@@ -813,16 +862,29 @@
 
         // --- STREAMING_CHUNK: Helpers ---
         function handleFiles(newFiles) {
+            let validFiles = Array.from(newFiles);
             if (state.activeTool.multiple) {
-                state.files = [...state.files, ...newFiles];
+                state.files = [...state.files, ...validFiles];
             } else {
-                state.files = [newFiles[0]];
+                state.files = [validFiles[0]];
             }
+            
+            // Generar miniaturas y establecer rotaciones iniciales
+            state.filePreviews = state.files.map(file => {
+                if (file && file.type && file.type.startsWith('image/')) {
+                    return URL.createObjectURL(file);
+                }
+                return null;
+            });
+            state.fileRotations = state.files.map((_, i) => state.fileRotations[i] || 0);
+            
             render();
         }
 
         function resetWorkspace() {
             state.files = [];
+            state.filePreviews = [];
+            state.fileRotations = [];
             state.processingState = 'idle';
             state.downloadUrl = null;
             state.downloadName = '';
@@ -889,6 +951,8 @@
                     await processRemovePages();
                 } else if (state.activeTool.id === 'number-pages') {
                     await processNumberPages();
+                } else if (state.activeTool.id === 'convert-webp') {
+                    await processConvertWebp();
                 }
             } catch (error) {
                 console.error("Error en procesamiento:", error);
@@ -899,20 +963,57 @@
         }
 
         async function processMerge() {
-            const { PDFDocument } = window.PDFLib;
+            const { PDFDocument, degrees } = window.PDFLib;
             const mergedPdf = await PDFDocument.create();
 
-            for (const file of state.files) {
-                const arrayBuffer = await file.arrayBuffer();
+            // Helper para rotar imágenes usando Canvas de HTML garantizando que no se corten
+            const rotateImageFile = async (file, angle, extension) => {
+                if (angle === 0 || angle % 360 === 0) return await file.arrayBuffer();
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        if (angle % 180 !== 0) {
+                            canvas.width = img.height;
+                            canvas.height = img.width;
+                        } else {
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+                        }
+                        ctx.translate(canvas.width / 2, canvas.height / 2);
+                        ctx.rotate((angle * Math.PI) / 180);
+                        ctx.drawImage(img, -img.width / 2, -img.height / 2);
+                        const mime = extension === 'png' ? 'image/png' : 'image/jpeg';
+                        canvas.toBlob(blob => blob.arrayBuffer().then(resolve), mime, 1.0);
+                    };
+                    img.src = URL.createObjectURL(file);
+                });
+            };
+
+            for (let i = 0; i < state.files.length; i++) {
+                const file = state.files[i];
+                const angle = state.fileRotations[i] || 0;
                 
                 if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+                    const arrayBuffer = await file.arrayBuffer();
                     const pdf = await PDFDocument.load(arrayBuffer);
                     const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-                    copiedPages.forEach((page) => mergedPdf.addPage(page));
+                    
+                    copiedPages.forEach((page) => {
+                        if (angle !== 0) {
+                            const currentRotation = page.getRotation().angle;
+                            page.setRotation(degrees((currentRotation + angle) % 360));
+                        }
+                        mergedPdf.addPage(page);
+                    });
                 } else if (file.type.startsWith('image/')) {
+                    const isPng = file.type === 'image/png' || file.name.endsWith('.png');
+                    const arrayBuffer = await rotateImageFile(file, angle, isPng ? 'png' : 'jpeg');
+                    
                     let image;
-                    if (file.type === 'image/jpeg' || file.name.endsWith('.jpg')) image = await mergedPdf.embedJpg(arrayBuffer);
-                    else if (file.type === 'image/png' || file.name.endsWith('.png')) image = await mergedPdf.embedPng(arrayBuffer);
+                    if (!isPng) image = await mergedPdf.embedJpg(arrayBuffer);
+                    else image = await mergedPdf.embedPng(arrayBuffer);
                     
                     if (image) {
                         const page = mergedPdf.addPage([image.width, image.height]);
@@ -1008,11 +1109,38 @@
             const { PDFDocument, StandardFonts, rgb } = window.PDFLib;
             const newPdf = await PDFDocument.create();
 
-            for (const file of state.files) {
+            // Helper para rotar imágenes usando Canvas de HTML garantizando que no se corten
+            const rotateImageFile = async (file, angle, extension) => {
+                if (angle === 0 || angle % 360 === 0) return await file.arrayBuffer();
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        if (angle % 180 !== 0) {
+                            canvas.width = img.height;
+                            canvas.height = img.width;
+                        } else {
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+                        }
+                        ctx.translate(canvas.width / 2, canvas.height / 2);
+                        ctx.rotate((angle * Math.PI) / 180);
+                        ctx.drawImage(img, -img.width / 2, -img.height / 2);
+                        const mime = extension === 'png' ? 'image/png' : 'image/jpeg';
+                        canvas.toBlob(blob => blob.arrayBuffer().then(resolve), mime, 1.0);
+                    };
+                    img.src = URL.createObjectURL(file);
+                });
+            };
+
+            for (let i = 0; i < state.files.length; i++) {
+                const file = state.files[i];
+                const angle = state.fileRotations[i] || 0;
                 const extension = file.name.split('.').pop().toLowerCase();
-                const arrayBuffer = await file.arrayBuffer();
 
                 if (extension === 'txt') {
+                    const arrayBuffer = await file.arrayBuffer();
                     const text = new TextDecoder("utf-8").decode(arrayBuffer);
                     const font = await newPdf.embedFont(StandardFonts.Helvetica);
                     const fontSize = 12;
@@ -1032,8 +1160,11 @@
                         yPos -= 15;
                     }
                 } else if (['jpg', 'jpeg', 'png'].includes(extension)) {
+                    const isPng = extension === 'png';
+                    const arrayBuffer = await rotateImageFile(file, angle, isPng ? 'png' : 'jpeg');
+                    
                     let image;
-                    if (extension === 'png') image = await newPdf.embedPng(arrayBuffer);
+                    if (isPng) image = await newPdf.embedPng(arrayBuffer);
                     else image = await newPdf.embedJpg(arrayBuffer);
                     const page = newPdf.addPage([image.width, image.height]);
                     page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
@@ -1177,6 +1308,48 @@
 
             const bytes = await pdfDoc.save();
             createDownload(bytes, `Arvelo_Numerado_${file.name}`, 'application/pdf');
+        }
+
+        async function processConvertWebp() {
+            const file = state.files[0];
+            const format = state.selectedImageFormat;
+            
+            const img = new Image();
+            const objectUrl = URL.createObjectURL(file);
+            
+            await new Promise((resolve, reject) => {
+                img.onload = resolve;
+                img.onerror = () => reject(new Error("No se pudo cargar la imagen WEBP."));
+                img.src = objectUrl;
+            });
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            
+            // Si es JPG o JPEG, rellenamos el fondo de blanco para evitar fondo negro en transparencias WEBP
+            if (format === 'jpg' || format === 'jpeg') {
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+            
+            ctx.drawImage(img, 0, 0);
+            
+            const mimeType = (format === 'png') ? 'image/png' : 'image/jpeg';
+            const dataUrl = canvas.toDataURL(mimeType, 1.0);
+            
+            const res = await fetch(dataUrl);
+            const arrayBuffer = await res.arrayBuffer();
+            
+            URL.revokeObjectURL(objectUrl);
+            canvas.width = 0;
+            canvas.height = 0;
+            
+            const originalName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+            const newName = `${originalName}_convertido.${format}`;
+            
+            createDownload(arrayBuffer, newName, mimeType);
         }
 
         // --- Init ---
