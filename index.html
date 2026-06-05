@@ -155,6 +155,11 @@
                             </button>
                             ` : ''}
                             
+                            <!-- Botón de Donaciones -->
+                            <a href="https://ko-fi.com/jesusarvelo/tip" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-900/30 dark:text-rose-400 dark:hover:bg-rose-900/50 transition-colors text-sm font-semibold shadow-sm border border-rose-100 dark:border-rose-800 relative z-20">
+                                Donaciones <span class="text-lg">☕</span>
+                            </a>
+                            
                             <button id="theme-toggle" class="p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors relative z-20" aria-label="Cambiar tema">
                                 <i data-lucide="${isDark ? 'sun' : 'moon'}" class="w-5 h-5 pointer-events-none"></i>
                             </button>
@@ -172,7 +177,7 @@
             }
             html += '</main>';
 
-            // Footer (Corrección Solicitada: Nombre del desarrollador y G-AI)
+            // Footer
             html += `
                 <footer class="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 mt-auto transition-colors duration-300">
                     <div class="max-w-6xl mx-auto px-4 py-6 flex flex-col md:flex-row items-center justify-between text-center md:text-left gap-4">
