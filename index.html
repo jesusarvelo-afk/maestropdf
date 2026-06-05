@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Proyect PDF</title>
     
-    <!-- Favicon AJJ -->
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='32' height='32'%3E%3Crect width='24' height='24' rx='4' fill='%232563eb'/%3E%3Ctext x='12' y='17' font-family='sans-serif' font-size='9' font-weight='bold' fill='white' text-anchor='middle'%3EAJJ%3C/text%3E%3C/svg%3E">
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="favicon.png">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -48,28 +48,21 @@
         body, nav, .tool-card, #dropzone {
             transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
         }
-
-        /* Animaciones para Toasts y Modales */
-        .toast-enter { animation: slideIn 0.3s forwards; }
-        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     </style>
 </head>
 <body class="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col font-sans text-slate-900 dark:text-slate-100 selection:bg-blue-200 dark:selection:bg-blue-900 transition-colors duration-300">
 
     <div id="app" class="flex flex-col flex-grow"></div>
-    <div id="toast-container" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 flex flex-col gap-2"></div>
 
     <script>
-        // CONFIGURACIÓN DE URLS Y LÍMITES
-        const URL_SUGERENCIAS = "https://script.google.com/macros/s/AKfycbxw6LThSnaQDdSedR-CD5XmT_6PB_vynTqQB7sIGy5frIKobXaE-TL4IAkPCzqpH_WL/exec";
-        const MAX_FILE_SIZE = 101 * 1024 * 1024; // 101 MB
-
+        // --- STREAMING_CHUNK: Initializing Dark Mode ---
         if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
         } else {
             document.documentElement.classList.remove('dark');
         }
 
+        // --- STREAMING_CHUNK: Configuring Tools Array ---
         const TOOLS = [
             {
                 id: 'merge',
@@ -123,6 +116,7 @@
             }
         ];
 
+        // --- STREAMING_CHUNK: Initializing State Variables ---
         let state = {
             activeTool: null,
             files: [],
@@ -135,37 +129,32 @@
             splitRange: '', 
             compressionLevel: '50',
             isTermsModalOpen: false,
-            isSugModalOpen: false,
             subscriptionStatus: 'idle', 
-            subscriptionEmail: '',
-            sugStatus: 'idle'
+            subscriptionEmail: ''
         };
 
+        // --- STREAMING_CHUNK: Rendering Main App Layout ---
         function render() {
             const app = document.getElementById('app');
             const isDark = document.documentElement.classList.contains('dark');
             let html = '';
 
-            // Navbar con Botón de Donaciones Ko-Fi
+            // Navbar
             html += `
                 <nav class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10 shadow-sm transition-colors duration-300">
                     <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-                        <div class="flex items-center gap-2 cursor-pointer" id="nav-logo">
-                            <i data-lucide="file-text" class="w-8 h-8 text-blue-600 dark:text-blue-500 pointer-events-none"></i>
-                            <span class="text-xl font-bold tracking-tight text-slate-900 dark:text-white pointer-events-none">Proyect PDF</span>
+                        <div class="flex items-center gap-3 cursor-pointer" id="nav-logo">
+                            <img src="favicon.png" alt="Proyect PDF Logo" class="w-8 h-8 object-contain rounded-md shadow-sm">
+                            <span class="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Proyect PDF</span>
                         </div>
                         
-                        <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-4">
                             ${state.activeTool ? `
-                            <button id="back-btn" class="hidden sm:flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors relative z-20">
+                            <button id="back-btn" class="flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors relative z-20">
                                 <i data-lucide="arrow-left" class="w-4 h-4 pointer-events-none"></i> Volver al inicio
                             </button>
                             ` : ''}
                             
-                            <a href="https://ko-fi.com/jesusarvelo/tip" target="_blank" class="flex items-center gap-2 px-4 py-2 bg-[#FF5E5B] hover:bg-[#ff4542] text-white font-bold rounded-full transition-all shadow-sm text-sm">
-                                Donaciones <i data-lucide="coffee" class="w-4 h-4 pointer-events-none"></i>
-                            </a>
-
                             <button id="theme-toggle" class="p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors relative z-20" aria-label="Cambiar tema">
                                 <i data-lucide="${isDark ? 'sun' : 'moon'}" class="w-5 h-5 pointer-events-none"></i>
                             </button>
@@ -183,52 +172,36 @@
             }
             html += '</main>';
 
-            // Footer con la nueva distribución
+            // Footer (Corrección Solicitada: Nombre del desarrollador y G-AI)
             html += `
                 <footer class="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 mt-auto transition-colors duration-300">
                     <div class="max-w-6xl mx-auto px-4 py-6 flex flex-col md:flex-row items-center justify-between text-center md:text-left gap-4">
-                        
-                        <!-- Izquierda: Firma y Versión -->
-                        <div class="text-slate-600 dark:text-slate-400 font-medium flex items-center justify-center md:justify-start gap-2">
+                        <div class="text-slate-600 dark:text-slate-400 font-medium flex flex-col items-center md:items-start gap-1">
                             <span class="flex items-center gap-1.5">
                                 <img src="https://flagcdn.com/w20/ve.png" srcset="https://flagcdn.com/w40/ve.png 2x" alt="Venezuela" class="w-4 h-3 rounded-[2px] shadow-sm pointer-events-none">
                                 Desarrollado por Jesús Arvelo & G-AI
                             </span>
-                            <span class="text-xs font-bold tracking-widest bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md">(V. 1.0.1)</span>
+                            <span class="text-xs font-bold tracking-widest bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">(V. 1.0.1)</span>
                         </div>
-                        
-                        <!-- Derecha: Copyright y Términos -->
                         <div class="text-sm text-slate-500 dark:text-slate-400 flex flex-col md:flex-row items-center gap-2 md:gap-4">
-                            <span>© 2026 Todos los derechos reservados.</span>
-                            <button id="open-terms-btn" class="text-blue-600 dark:text-blue-400 hover:underline hover:text-blue-800 dark:hover:text-blue-300 transition-colors">
-                                Términos y Condiciones de Uso
-                            </button>
+                            <span>© ${new Date().getFullYear()} Todos los derechos reservados.</span>
+                            <button id="open-terms-btn" class="text-blue-600 dark:text-blue-400 hover:underline transition-colors">Términos y Condiciones</button>
                         </div>
-                        
                     </div>
                 </footer>
             `;
 
-            // Botón Flotante de Sugerencias
-            html += `
-                <button id="open-sug-btn" class="fixed bottom-6 right-6 bg-slate-900 dark:bg-blue-600 text-white p-4 rounded-full shadow-lg hover:scale-105 transition-all duration-300 z-40 flex items-center gap-2 group">
-                    <i data-lucide="message-square" class="w-6 h-6 pointer-events-none"></i>
-                    <span class="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-300 ease-in-out font-medium pointer-events-none">
-                        &nbsp;Sugerencias
-                    </span>
-                </button>
-            `;
-
-            // Modales
-            if (state.isTermsModalOpen) html += renderTermsModal();
-            if (state.isSugModalOpen) html += renderSuggestionsModal();
+            // Terms Modal
+            if (state.isTermsModalOpen) {
+                html += renderTermsModal();
+            }
 
             app.innerHTML = html;
             lucide.createIcons();
             attachListeners();
         }
 
-        // --- RENDER HOME ---
+        // --- STREAMING_CHUNK: Rendering Home View with CTA ---
         function renderHome() {
             let cardsHtml = TOOLS.map(tool => `
                 <div data-id="${tool.id}" class="tool-card flex flex-col h-full bg-white dark:bg-slate-800 p-6 rounded-2xl border-2 border-slate-100 dark:border-slate-700 cursor-pointer transition-all duration-200 shadow-sm hover:-translate-y-1 ${tool.color}">
@@ -240,17 +213,53 @@
                 </div>
             `).join('');
 
+            let ctaHtml = `
+                <div class="mt-20 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl p-8 md:p-12 text-center shadow-2xl relative overflow-hidden">
+                    <div class="absolute top-0 right-0 -mr-8 -mt-8 w-40 h-40 rounded-full bg-white opacity-10"></div>
+                    <div class="absolute bottom-0 left-0 -ml-8 -mb-8 w-24 h-24 rounded-full bg-white opacity-10"></div>
+                    
+                    <div class="relative z-10 max-w-2xl mx-auto">
+                        <span class="inline-block py-1 px-4 rounded-full bg-blue-500/30 text-blue-100 text-xs font-bold uppercase tracking-wider mb-4 border border-blue-400/30">
+                            Próximamente
+                        </span>
+                        <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">¡Lleva Proyect PDF en tu bolsillo!</h2>
+                        <p class="text-blue-100 mb-8 text-lg">
+                            Déjanos tu correo para ser de los primeros en probar nuestra nueva <strong>App para Android</strong> y recibir futuras actualizaciones de la plataforma.
+                        </p>
+                        
+                        ${state.subscriptionStatus === 'success' ? `
+                            <div class="bg-white/10 border border-white/20 rounded-xl p-4 flex items-center justify-center gap-3 text-white max-w-md mx-auto backdrop-blur-sm">
+                                <i data-lucide="check-circle-2" class="w-6 h-6 text-green-400"></i>
+                                <span class="font-medium">¡Gracias! Te hemos añadido a la lista de espera.</span>
+                            </div>
+                        ` : `
+                            <form id="subscribe-form" class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto relative">
+                                <div class="relative flex-grow">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <i data-lucide="mail" class="h-5 w-5 text-blue-200"></i>
+                                    </div>
+                                    <input type="email" id="subscriber-email" required placeholder="tu@correo.com" class="w-full pl-10 pr-4 py-3 rounded-xl border border-white/20 focus:ring-2 focus:ring-white/50 bg-white/10 text-white placeholder-blue-200 outline-none backdrop-blur-sm transition-all shadow-inner" value="${state.subscriptionEmail}">
+                                </div>
+                                <button type="submit" class="bg-white text-blue-700 hover:bg-blue-50 font-bold py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg min-w-[140px]">
+                                    ${state.subscriptionStatus === 'subscribing' ? `
+                                        <i data-lucide="loader-2" class="w-5 h-5 animate-spin-slow"></i>
+                                    ` : `
+                                        Suscribirme <i data-lucide="send" class="w-4 h-4"></i>
+                                    `}
+                                </button>
+                            </form>
+                        `}
+                    </div>
+                </div>
+            `;
+
             return `
                 <div class="max-w-6xl mx-auto px-4 py-12 flex-grow">
                     <div class="text-center mb-16">
                         <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-4 transition-colors">
                             Proyect <span class="text-blue-600 dark:text-blue-500">PDF</span>
                         </h1>
-                        <!-- TEXTO DE PRIVACIDAD FLUORESCENTE -->
-                        <div class="inline-block border border-green-500 rounded-xl px-4 py-2 bg-green-50 dark:bg-slate-800 text-green-700 dark:text-[#39ff14] font-bold shadow-sm dark:shadow-[#39ff14]/20 mb-6">
-                            <i data-lucide="lock" class="inline w-4 h-4 mr-1 pb-0.5 pointer-events-none"></i> Privacidad Absoluta: Tus archivos nunca salen de tu ordenador
-                        </div>
-                        <p class="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto transition-colors mt-2">
+                        <p class="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto transition-colors">
                             Todas las herramientas que necesitas para trabajar con archivos PDF en un solo lugar. 
                             Rápido, seguro y fácil de usar directamente en tu navegador.
                         </p>
@@ -258,11 +267,12 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                         ${cardsHtml}
                     </div>
+                    ${ctaHtml}
                 </div>
             `;
         }
 
-        // --- RENDER WORKSPACE ---
+        // --- STREAMING_CHUNK: Rendering Workspace View ---
         function renderWorkspace() {
             const tool = state.activeTool;
             let workspaceContent = '';
@@ -271,7 +281,9 @@
                 workspaceContent = `
                     <div class="p-8">
                         <div id="dropzone" class="border-2 border-dashed rounded-2xl p-12 text-center transition-all duration-200 
-                            ${state.isDragging ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 bg-slate-50 dark:bg-slate-800/50'}">
+                            ${state.isDragging 
+                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
+                                : 'border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 bg-slate-50 dark:bg-slate-800/50'}">
                             
                             <input type="file" id="file-input" class="hidden" accept="${tool.accept}" ${tool.multiple ? 'multiple' : ''} />
                             
@@ -284,7 +296,7 @@
                             <button id="select-files-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-xl transition-colors shadow-sm">
                                 Seleccionar Archivos
                             </button>
-                            <p class="text-xs text-slate-400 dark:text-slate-500 mt-4 transition-colors">Límite de seguridad: 101 MB por archivo</p>
+                            <p class="text-xs text-slate-400 dark:text-slate-500 mt-4 transition-colors">Formatos soportados: ${tool.accept}</p>
                         </div>
 
                         ${state.files.length > 0 ? `
@@ -405,68 +417,67 @@
             `;
         }
 
-        // --- MODALES (TÉRMINOS Y SUGERENCIAS) ---
+        // --- STREAMING_CHUNK: Rendering Terms Modal ---
         function renderTermsModal() {
             return `
-                <div id="terms-modal-overlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-700">
+                <div id="terms-modal-overlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-100 transition-opacity">
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-700 transform scale-100 transition-transform">
+                        
                         <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
                             <h2 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
                                 <i data-lucide="shield-check" class="w-6 h-6 text-blue-600 dark:text-blue-500"></i>
                                 Términos y Condiciones de Uso
                             </h2>
-                            <button id="close-terms-x" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-md hover:bg-slate-200 dark:hover:bg-slate-700">
+                            <button id="close-terms-x" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 rounded-md hover:bg-slate-200 dark:hover:bg-slate-700">
                                 <i data-lucide="x" class="w-6 h-6 pointer-events-none"></i>
                             </button>
                         </div>
+
                         <div class="p-6 overflow-y-auto flex-grow text-slate-600 dark:text-slate-300 text-sm md:text-base leading-relaxed space-y-6">
-                            <section><h4 class="text-lg font-bold mb-2 text-slate-800 dark:text-white">1. Aceptación de los Términos</h4><p>Al acceder y utilizar Proyect PDF, aceptas estos términos en su totalidad. Si no estás de acuerdo con alguna de las condiciones, te invitamos a no utilizar la herramienta.</p></section>
-                            <section><h4 class="text-lg font-bold mb-2 text-slate-800 dark:text-white">2. Uso del Servicio</h4><p>Esta herramienta ha sido creada con fines de utilidad personal, recreacional y su uso es libre. Como usuario, te comprometes a utilizarla de manera responsable y a no procesar documentos ilegales, fraudulentos o que violen normativas vigentes.</p></section>
-                            <section><h4 class="text-lg font-bold mb-2 text-slate-800 dark:text-white">3. Privacidad y Tratamiento de Archivos</h4><p class="mb-3">Sabemos lo importante que es la privacidad de tu información.</p><ul class="list-disc pl-5 space-y-2"><li><strong class="text-slate-700 dark:text-slate-200">Procesamiento temporal:</strong> Los documentos, fotografías y archivos que subas para comprimir, crear o convertir se procesan de manera temporal y estrictamente para cumplir con la tarea solicitada.</li><li><strong class="text-slate-700 dark:text-slate-200">Cero almacenamiento:</strong> No guardamos, leemos, compartimos, cedemos, ni nos apropiamos del contenido de ninguno de los archivos que proceses en esta plataforma.</li></ul></section>
-                            <section><h4 class="text-lg font-bold mb-2 text-slate-800 dark:text-white">4. Propiedad Intelectual y Derechos de Autor</h4><ul class="list-disc pl-5 space-y-2"><li><strong class="text-slate-700 dark:text-slate-200">Tus Archivos:</strong> Tú conservas el 100% de los derechos de autor y de propiedad intelectual sobre cualquier documento, imagen o texto que subas o generes a través de la herramienta.</li><li><strong class="text-slate-700 dark:text-slate-200">La Aplicación:</strong> Todo el código fuente, diseño, estructura, interfaz y el nombre de Proyect PDF son propiedad intelectual exclusiva de Jesús Arvelo. Queda estrictamente prohibida la copia, reproducción, modificación o distribución comercial del aplicativo sin autorización previa.</li></ul></section>
-                            <section><h4 class="text-lg font-bold mb-2 text-slate-800 dark:text-white">5. Limitación de Responsabilidad</h4><p>La herramienta se ofrece "tal cual", como un proyecto de desarrollo continuo, y que es creado de manera recreacional pero de igual forma tiene protección intelectual. No nos hacemos responsables por la pérdida accidental de datos, corrupción de archivos o el uso indebido que los usuarios le den a los documentos procesados. Recomendamos encarecidamente mantener siempre una copia de seguridad (backup) de tus archivos originales.</p></section>
-                            <section><h4 class="text-lg font-bold mb-2 text-slate-800 dark:text-white">6. Legislación Aplicable</h4><p>Estos términos y condiciones se rigen e interpretan de acuerdo con las leyes de la República Bolivariana de Venezuela.</p></section>
+                            <section>
+                                <h4 class="text-lg font-bold mb-2 text-slate-800 dark:text-white">1. Aceptación de los Términos</h4>
+                                <p>Al acceder y utilizar Proyect PDF, aceptas estos términos en su totalidad. Si no estás de acuerdo con alguna de las condiciones, te invitamos a no utilizar la herramienta.</p>
+                            </section>
+                            <section>
+                                <h4 class="text-lg font-bold mb-2 text-slate-800 dark:text-white">2. Uso del Servicio</h4>
+                                <p>Esta herramienta ha sido creada con fines de utilidad personal, recreacional y su uso es libre. Como usuario, te comprometes a utilizarla de manera responsable y a no procesar documentos ilegales, fraudulentos o que violen normativas vigentes.</p>
+                            </section>
+                            <section>
+                                <h4 class="text-lg font-bold mb-2 text-slate-800 dark:text-white">3. Privacidad y Tratamiento de Archivos</h4>
+                                <p class="mb-3">Sabemos lo importante que es la privacidad de tu información.</p>
+                                <ul class="list-disc pl-5 space-y-2">
+                                    <li><strong class="text-slate-700 dark:text-slate-200">Procesamiento temporal:</strong> Los documentos, fotografías y archivos que subas para comprimir, crear o convertir se procesan de manera temporal y estrictamente para cumplir con la tarea solicitada.</li>
+                                    <li><strong class="text-slate-700 dark:text-slate-200">Cero almacenamiento:</strong> No guardamos, leemos, compartimos, cedemos, ni nos apropiamos del contenido de ninguno de los archivos que proceses en esta plataforma.</li>
+                                </ul>
+                            </section>
+                            <section>
+                                <h4 class="text-lg font-bold mb-2 text-slate-800 dark:text-white">4. Propiedad Intelectual y Derechos de Autor</h4>
+                                <ul class="list-disc pl-5 space-y-2">
+                                    <li><strong class="text-slate-700 dark:text-slate-200">Tus Archivos:</strong> Tú conservas el 100% de los derechos de autor y de propiedad intelectual sobre cualquier documento, imagen o texto que subas o generes a través de la herramienta.</li>
+                                    <li><strong class="text-slate-700 dark:text-slate-200">La Aplicación:</strong> Todo el código fuente, diseño, estructura, interfaz y el nombre de Proyect PDF son propiedad intelectual exclusiva de Jesús Arvelo. Queda estrictamente prohibida la copia, reproducción, modificación o distribución comercial del aplicativo sin autorización previa.</li>
+                                </ul>
+                            </section>
+                            <section>
+                                <h4 class="text-lg font-bold mb-2 text-slate-800 dark:text-white">5. Limitación de Responsabilidad</h4>
+                                <p>La herramienta se ofrece "tal cual", como un proyecto de desarrollo continuo, y que es creado de manera recreacional pero de igual forma tiene protección intelectual. No nos hacemos responsables por la pérdida accidental de datos, corrupción de archivos o el uso indebido que los usuarios le den a los documentos procesados. Recomendamos encarecidamente mantener siempre una copia de seguridad (backup) de tus archivos originales.</p>
+                            </section>
+                            <section>
+                                <h4 class="text-lg font-bold mb-2 text-slate-800 dark:text-white">6. Legislación Aplicable</h4>
+                                <p>Estos términos y condiciones se rigen e interpretan de acuerdo con las leyes de la República Bolivariana de Venezuela.</p>
+                            </section>
                         </div>
+
                         <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end">
-                            <button id="close-terms-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg shadow-sm">Entendido y Aceptado</button>
+                            <button id="close-terms-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition-colors shadow-sm">
+                                Entendido y Aceptado
+                            </button>
                         </div>
                     </div>
                 </div>
             `;
         }
 
-        function renderSuggestionsModal() {
-            return `
-                <div id="sug-modal-overlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-                        <div class="p-5 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
-                            <h3 class="text-xl font-bold flex items-center gap-2 text-slate-800 dark:text-white"><i data-lucide="message-square" class="text-blue-600"></i> Buzón de Contacto</h3>
-                            <button id="close-sug-x" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"><i data-lucide="x" class="pointer-events-none"></i></button>
-                        </div>
-                        <div class="p-6">
-                            ${state.sugStatus === 'success' ? `
-                                <div class="text-center py-8">
-                                    <i data-lucide="check-circle-2" class="w-16 h-16 text-green-500 mx-auto mb-4"></i>
-                                    <h4 class="text-lg font-bold text-slate-800 dark:text-white mb-2">¡Mensaje enviado!</h4>
-                                    <p class="text-slate-500">Gracias por ayudarnos a mejorar.</p>
-                                </div>
-                            ` : `
-                                <form id="sug-form">
-                                    <p class="text-sm text-slate-600 dark:text-slate-300 mb-4">¿Encontraste un error? ¿Tienes una idea genial? Escríbela aquí y le llegará directamente al desarrollador.</p>
-                                    <textarea id="sug-msg" required placeholder="Escribe tu idea aquí..." class="w-full border-2 border-slate-200 dark:border-slate-600 rounded-xl p-3 focus:border-blue-500 bg-transparent outline-none min-h-[120px] resize-none dark:text-white mb-4"></textarea>
-                                    <input id="sug-email" type="email" placeholder="Tu Correo (Opcional)" class="w-full border-2 border-slate-200 dark:border-slate-600 rounded-xl p-3 focus:border-blue-500 bg-transparent outline-none dark:text-white mb-6">
-                                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors">
-                                        ${state.sugStatus === 'sending' ? 'Enviando...' : '<i data-lucide="send" class="w-5 h-5 pointer-events-none"></i> Enviar Mensaje'}
-                                    </button>
-                                </form>
-                            `}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // --- CONTROLADORES DE EVENTOS GLOBALES ---
+        // --- STREAMING_CHUNK: Event Listeners & Logic ---
         function attachListeners() {
             // Theme Toggle
             const themeToggleBtn = document.getElementById('theme-toggle');
@@ -493,60 +504,61 @@
             const backBtn = document.getElementById('back-btn');
             if (backBtn) backBtn.onclick = () => { state.activeTool = null; resetWorkspace(); };
 
-            // Modal Términos
+            // Modals
             const openTermsBtn = document.getElementById('open-terms-btn');
             if (openTermsBtn) {
-                openTermsBtn.onclick = () => { state.isTermsModalOpen = true; render(); document.body.style.overflow = 'hidden'; };
+                openTermsBtn.onclick = () => {
+                    state.isTermsModalOpen = true;
+                    render();
+                    document.body.style.overflow = 'hidden';
+                };
             }
-            const closeTermsModal = () => { state.isTermsModalOpen = false; render(); document.body.style.overflow = 'auto'; };
+            const closeModal = () => {
+                state.isTermsModalOpen = false;
+                render();
+                document.body.style.overflow = 'auto'; 
+            };
             const closeTermsBtn = document.getElementById('close-terms-btn');
             const closeTermsX = document.getElementById('close-terms-x');
             const termsOverlay = document.getElementById('terms-modal-overlay');
-            if (closeTermsBtn) closeTermsBtn.onclick = closeTermsModal;
-            if (closeTermsX) closeTermsX.onclick = closeTermsModal;
-            if (termsOverlay) termsOverlay.onclick = (e) => { if (e.target === termsOverlay) closeTermsModal(); };
-
-            // Modal Sugerencias
-            const openSugBtn = document.getElementById('open-sug-btn');
-            if (openSugBtn) {
-                openSugBtn.onclick = () => { state.isSugModalOpen = true; state.sugStatus = 'idle'; render(); document.body.style.overflow = 'hidden'; };
+            if (closeTermsBtn) closeTermsBtn.onclick = closeModal;
+            if (closeTermsX) closeTermsX.onclick = closeModal;
+            if (termsOverlay) {
+                termsOverlay.onclick = (e) => { if (e.target === termsOverlay) closeModal(); };
             }
-            const closeSugModal = () => { state.isSugModalOpen = false; render(); document.body.style.overflow = 'auto'; };
-            const closeSugX = document.getElementById('close-sug-x');
-            const sugOverlay = document.getElementById('sug-modal-overlay');
-            if (closeSugX) closeSugX.onclick = closeSugModal;
-            if (sugOverlay) sugOverlay.onclick = (e) => { if (e.target === sugOverlay) closeSugModal(); };
 
-            // Sugerencias Form
-            const sugForm = document.getElementById('sug-form');
-            if (sugForm) {
-                sugForm.onsubmit = (e) => {
+            // Subscription Form
+            const subscribeForm = document.getElementById('subscribe-form');
+            if (subscribeForm) {
+                subscribeForm.onsubmit = (e) => {
                     e.preventDefault();
-                    const msg = document.getElementById('sug-msg').value;
-                    const email = document.getElementById('sug-email').value;
-                    if (!msg) return;
-                    
-                    state.sugStatus = 'sending';
-                    render();
+                    const emailInput = document.getElementById('subscriber-email');
+                    if (emailInput && emailInput.value) {
+                        state.subscriptionEmail = emailInput.value;
+                        state.subscriptionStatus = 'subscribing';
+                        render();
+                        
+                        const googleScriptUrl = "https://script.google.com/macros/s/AKfycbzFcQubKPubo319RkUJDeqelQxqjVZ3p2wttrc-hjdP-Rh2V8rTxG0NIgIaQiEgPr11TA/exec";
 
-                    fetch(URL_SUGERENCIAS, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: new URLSearchParams({ mensaje: msg, correo: email })
-                    }).then(() => {
-                        state.sugStatus = 'success';
-                        render();
-                        setTimeout(closeSugModal, 3000);
-                    }).catch(() => {
-                        showToast('Error al enviar. Intente luego.');
-                        state.sugStatus = 'idle';
-                        render();
-                    });
+                        fetch(googleScriptUrl, {
+                            method: 'POST',
+                            mode: 'no-cors',
+                            body: new URLSearchParams({ 'email': state.subscriptionEmail })
+                        })
+                        .then(() => {
+                            state.subscriptionStatus = 'success';
+                            state.subscriptionEmail = '';
+                            render();
+                        })
+                        .catch(error => {
+                            console.error("Error al guardar:", error);
+                            state.subscriptionStatus = 'idle';
+                            render();
+                        });
+                    }
                 };
             }
 
-            // Tools Navigation
             if (!state.activeTool) {
                 document.querySelectorAll('.tool-card').forEach(card => {
                     card.onclick = () => {
@@ -556,7 +568,6 @@
                     };
                 });
             } else {
-                // Workspace events
                 const dropzone = document.getElementById('dropzone');
                 const fileInput = document.getElementById('file-input');
                 const selectFilesBtn = document.getElementById('select-files-btn');
@@ -604,27 +615,12 @@
             }
         }
 
-        // --- UTILIDADES ---
-        function showToast(msg) {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `p-4 rounded-xl shadow-2xl text-white text-sm font-medium flex items-center gap-3 toast-enter bg-slate-800 dark:bg-slate-700 border-l-4 border-blue-500`;
-            toast.innerHTML = `<span>${msg}</span>`;
-            container.appendChild(toast);
-            setTimeout(() => toast.remove(), 4000);
-        }
-
+        // --- STREAMING_CHUNK: Helpers ---
         function handleFiles(newFiles) {
-            for (let f of newFiles) {
-                if (f.size > MAX_FILE_SIZE) {
-                    showToast(`Archivo omitido: ${f.name}. Límite 101 MB.`);
-                    continue;
-                }
-                if (state.activeTool.multiple) {
-                    state.files.push(f);
-                } else {
-                    state.files = [f];
-                }
+            if (state.activeTool.multiple) {
+                state.files = [...state.files, ...newFiles];
+            } else {
+                state.files = [newFiles[0]];
             }
             render();
         }
@@ -639,8 +635,12 @@
         }
 
         function createDownload(data, filename, type) {
-            let blob = new Blob([data], { type: type });
-            state.downloadUrl = URL.createObjectURL(blob);
+            let blob;
+            if (typeof data === 'string') blob = new Blob([data], { type: type });
+            else blob = new Blob([data], { type: type });
+            
+            const url = URL.createObjectURL(blob);
+            state.downloadUrl = url;
             state.downloadName = filename;
             state.processingState = 'done';
             render();
@@ -649,37 +649,50 @@
         function parsePageRange(rangeStr, maxPages) {
             const indices = new Set();
             if (!rangeStr.trim()) return [0];
+
             const parts = rangeStr.split(',');
             for (let part of parts) {
                 part = part.trim();
                 if (part.includes('-')) {
                     const [startStr, endStr] = part.split('-');
-                    let start = parseInt(startStr), end = parseInt(endStr);
+                    let start = parseInt(startStr);
+                    let end = parseInt(endStr);
                     if (!isNaN(start) && !isNaN(end)) {
-                        for (let i = Math.max(1, start); i <= Math.min(maxPages, end); i++) indices.add(i - 1);
+                        start = Math.max(1, start);
+                        end = Math.min(maxPages, end);
+                        for (let i = start; i <= end; i++) indices.add(i - 1);
                     }
                 } else {
                     const num = parseInt(part);
-                    if (!isNaN(num) && num >= 1 && num <= maxPages) indices.add(num - 1);
+                    if (!isNaN(num) && num >= 1 && num <= maxPages) {
+                        indices.add(num - 1);
+                    }
                 }
             }
             return Array.from(indices).sort((a, b) => a - b);
         }
 
-        // --- MOTORES DE PROCESAMIENTO ---
+        // --- STREAMING_CHUNK: Core Processing Engine ---
         async function processFiles() {
             if (state.files.length === 0) return;
             state.processingState = 'processing';
             render();
 
             try {
-                if (state.activeTool.id === 'merge') await processMerge();
-                else if (state.activeTool.id === 'split') await processSplit();
-                else if (state.activeTool.id === 'compress') await processCompress();
-                else if (state.activeTool.id === 'to-pdf') await processCreatePdf();
-                else if (state.activeTool.id === 'from-pdf') await processFromPdf();
+                if (state.activeTool.id === 'merge') {
+                    await processMerge();
+                } else if (state.activeTool.id === 'split') {
+                    await processSplit();
+                } else if (state.activeTool.id === 'compress') {
+                    await processCompress();
+                } else if (state.activeTool.id === 'to-pdf') {
+                    await processCreatePdf();
+                } else if (state.activeTool.id === 'from-pdf') {
+                    await processFromPdf();
+                }
             } catch (error) {
-                state.errorMessage = 'Ocurrió un error. Verifique que el archivo sea válido y no esté protegido.';
+                console.error("Error en procesamiento:", error);
+                state.errorMessage = 'Ocurrió un error al procesar el archivo. Verifique que el archivo sea válido y no esté dañado.';
                 state.processingState = 'error';
                 render();
             }
@@ -688,28 +701,37 @@
         async function processMerge() {
             const { PDFDocument } = window.PDFLib;
             const mergedPdf = await PDFDocument.create();
+
             for (const file of state.files) {
                 const arrayBuffer = await file.arrayBuffer();
-                if (file.name.toLowerCase().endsWith('.pdf')) {
+                
+                if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
                     const pdf = await PDFDocument.load(arrayBuffer);
                     const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
                     copiedPages.forEach((page) => mergedPdf.addPage(page));
                 } else if (file.type.startsWith('image/')) {
-                    let image = file.name.toLowerCase().endsWith('.png') ? await mergedPdf.embedPng(arrayBuffer) : await mergedPdf.embedJpg(arrayBuffer);
+                    let image;
+                    if (file.type === 'image/jpeg' || file.name.endsWith('.jpg')) image = await mergedPdf.embedJpg(arrayBuffer);
+                    else if (file.type === 'image/png' || file.name.endsWith('.png')) image = await mergedPdf.embedPng(arrayBuffer);
+                    
                     if (image) {
                         const page = mergedPdf.addPage([image.width, image.height]);
                         page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
                     }
                 }
             }
-            createDownload(await mergedPdf.save(), 'Archivos_Unidos.pdf', 'application/pdf');
+            const mergedPdfBytes = await mergedPdf.save();
+            createDownload(mergedPdfBytes, 'Archivos_Unidos.pdf', 'application/pdf');
         }
 
         async function processSplit() {
             const { PDFDocument } = window.PDFLib;
-            const arrayBuffer = await state.files[0].arrayBuffer();
+            const file = state.files[0];
+            const arrayBuffer = await file.arrayBuffer();
+            
             const originalPdf = await PDFDocument.load(arrayBuffer);
-            const pagesToExtract = parsePageRange(state.splitRange, originalPdf.getPageCount());
+            const totalPages = originalPdf.getPageCount();
+            const pagesToExtract = parsePageRange(state.splitRange, totalPages);
             
             if (pagesToExtract.length === 0) throw new Error("Rango inválido");
 
@@ -717,42 +739,69 @@
                 const newPdf = await PDFDocument.create();
                 const [copiedPage] = await newPdf.copyPages(originalPdf, [pagesToExtract[0]]);
                 newPdf.addPage(copiedPage);
-                createDownload(await newPdf.save(), `Pagina_${pagesToExtract[0] + 1}.pdf`, 'application/pdf');
+                const bytes = await newPdf.save();
+                createDownload(bytes, `Pagina_${pagesToExtract[0] + 1}.pdf`, 'application/pdf');
             } else {
+                if (!window.JSZip) throw new Error("ZIP no disponible");
                 const zip = new JSZip();
+                
                 for (const pageIndex of pagesToExtract) {
                     const singlePdf = await PDFDocument.create();
                     const [copied] = await singlePdf.copyPages(originalPdf, [pageIndex]);
                     singlePdf.addPage(copied);
-                    zip.file(`Pagina_${pageIndex + 1}.pdf`, await singlePdf.save());
+                    const bytes = await singlePdf.save();
+                    zip.file(`Pagina_${pageIndex + 1}.pdf`, bytes);
                 }
-                createDownload(await zip.generateAsync({type:"blob"}), `Paginas_Separadas.zip`, 'application/zip');
+
+                const zipContent = await zip.generateAsync({type:"blob"});
+                const url = URL.createObjectURL(zipContent);
+                state.downloadUrl = url;
+                state.downloadName = `Paginas_Separadas.zip`;
+                state.processingState = 'done';
+                render();
             }
         }
 
         async function processCompress() {
+            const file = state.files[0];
             const level = parseInt(state.compressionLevel);
-            const arrayBuffer = await state.files[0].arrayBuffer();
-            const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            
+            if (!window.pdfjsLib) throw new Error("Motor PDF no disponible.");
+
+            const arrayBuffer = await file.arrayBuffer();
+            const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+            const pdfDoc = await loadingTask.promise;
             
             const { PDFDocument } = window.PDFLib;
             const newPdf = await PDFDocument.create();
-            let imgQuality = level === 25 ? 0.8 : (level === 75 ? 0.3 : 0.5);
+
+            let imgQuality = 0.5; 
+            if (level === 25) imgQuality = 0.8;
+            if (level === 75) imgQuality = 0.3;
 
             for (let i = 1; i <= pdfDoc.numPages; i++) {
                 const page = await pdfDoc.getPage(i);
                 const viewport = page.getViewport({ scale: 1.5 }); 
+                
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
-                canvas.width = viewport.width; canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
                 
                 await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-                const newImg = await newPdf.embedJpg(canvas.toDataURL('image/jpeg', imgQuality));
+                
+                const imgDataUrl = canvas.toDataURL('image/jpeg', imgQuality);
+                const newImg = await newPdf.embedJpg(imgDataUrl);
                 const newPage = newPdf.addPage([newImg.width, newImg.height]);
                 newPage.drawImage(newImg, { x: 0, y: 0, width: newImg.width, height: newImg.height });
-                canvas.width = 0; canvas.height = 0;
+                
+                // Cleanup canvas
+                canvas.width = 0;
+                canvas.height = 0;
             }
-            createDownload(await newPdf.save(), `Comprimido_${state.files[0].name}`, 'application/pdf');
+
+            const compressedBytes = await newPdf.save();
+            createDownload(compressedBytes, `Comprimido_${file.name}`, 'application/pdf');
         }
 
         async function processCreatePdf() {
@@ -766,58 +815,116 @@
                 if (extension === 'txt') {
                     const text = new TextDecoder("utf-8").decode(arrayBuffer);
                     const font = await newPdf.embedFont(StandardFonts.Helvetica);
+                    const fontSize = 12;
                     let page = newPdf.addPage();
-                    let yPos = page.getSize().height - 50;
+                    let { width, height } = page.getSize();
+                    let yPos = height - 50;
 
-                    for (const line of text.split('\n')) {
-                        if (yPos < 50) { page = newPdf.addPage(); yPos = page.getSize().height - 50; }
-                        try { page.drawText(line.replace(/\r/g, ''), { x: 50, y: yPos, size: 12, font, color: rgb(0,0,0) }); } catch(e) {}
+                    const lines = text.split('\n');
+                    for (const line of lines) {
+                        if (yPos < 50) {
+                            page = newPdf.addPage();
+                            yPos = height - 50;
+                        }
+                        try {
+                            page.drawText(line.replace(/\r/g, ''), { x: 50, y: yPos, size: fontSize, font: font, color: rgb(0,0,0) });
+                        } catch(e) {}
                         yPos -= 15;
                     }
                 } else if (['jpg', 'jpeg', 'png'].includes(extension)) {
-                    let image = extension === 'png' ? await newPdf.embedPng(arrayBuffer) : await newPdf.embedJpg(arrayBuffer);
+                    let image;
+                    if (extension === 'png') image = await newPdf.embedPng(arrayBuffer);
+                    else image = await newPdf.embedJpg(arrayBuffer);
                     const page = newPdf.addPage([image.width, image.height]);
                     page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
                 } else {
                     const font = await newPdf.embedFont(StandardFonts.HelveticaBold);
                     const page = newPdf.addPage();
                     page.drawText(`Archivo Procesado: ${file.name}`, { x: 50, y: 700, size: 20, font });
+                    page.drawText(`Este documento fue insertado correctamente.`, { x: 50, y: 650, size: 12 });
                 }
             }
-            createDownload(await newPdf.save(), 'Proyect_Creado.pdf', 'application/pdf');
+
+            const pdfBytes = await newPdf.save();
+            createDownload(pdfBytes, 'Arvelo_Creado.pdf', 'application/pdf');
         }
 
         async function processFromPdf() {
+            const file = state.files[0];
             const format = state.selectedExportFormat;
-            const arrayBuffer = await state.files[0].arrayBuffer();
-            const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+            if (!window.pdfjsLib) throw new Error("Motor no disponible.");
+
+            const arrayBuffer = await file.arrayBuffer();
+            const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+            const pdfDoc = await loadingTask.promise;
 
             if (format === 'jpg' || format === 'png') {
                 const page = await pdfDoc.getPage(1);
                 const viewport = page.getViewport({ scale: 2.0 }); 
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
-                canvas.width = viewport.width; canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                
                 await page.render({ canvasContext: ctx, viewport: viewport }).promise;
                 
                 const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
-                const res = await fetch(canvas.toDataURL(mimeType, 1.0));
-                createDownload(await res.arrayBuffer(), `Proyect_Imagen.${format}`, mimeType);
+                const dataUrl = canvas.toDataURL(mimeType, 1.0);
+                const res = await fetch(dataUrl);
+                const imgBytes = await res.arrayBuffer();
+                
+                createDownload(imgBytes, `Arvelo_Imagen.${format}`, mimeType);
             } else {
                 let fullTextHtml = "";
+                let fullTextExcel = "";
+
                 for (let i = 1; i <= pdfDoc.numPages; i++) {
                     const page = await pdfDoc.getPage(i);
                     const textContent = await page.getTextContent();
-                    fullTextHtml += `<p>${textContent.items.map(item => item.str).join(' ')}</p>`;
+                    const pageText = textContent.items.map(item => item.str).join(' ');
+                    
+                    fullTextHtml += `<p>${pageText}</p>`;
+                    fullTextExcel += `<tr><td><b>Página ${i}</b></td><td>${pageText}</td></tr>`;
                 }
-                const ext = format === 'docx' ? 'doc' : 'xls';
-                const mime = format === 'docx' ? 'application/msword' : 'application/vnd.ms-excel';
-                const content = `<html xmlns:o="urn:schemas-microsoft-com:office:office"><head><meta charset="utf-8"></head><body>${fullTextHtml}</body></html>`;
-                createDownload(content, `Proyect_Convertido.${ext}`, mime);
+
+                let content = "";
+                let ext = "";
+                let mimeType = "";
+
+                if (format === 'docx') {
+                    ext = 'doc'; 
+                    mimeType = 'application/msword';
+                    content = `
+                        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+                        <head><meta charset="utf-8"><title>Documento</title></head>
+                        <body>
+                            <h1>Contenido de: ${file.name}</h1>
+                            <hr>
+                            ${fullTextHtml}
+                        </body>
+                        </html>
+                    `;
+                } else if (format === 'xlsx') {
+                    ext = 'xls'; 
+                    mimeType = 'application/vnd.ms-excel';
+                    content = `
+                        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+                        <head><meta charset="utf-8"></head>
+                        <body>
+                            <table border="1">
+                                <tr><th colspan="2" style="background-color:#4CAF50;color:white;">Contenido de: ${file.name}</th></tr>
+                                ${fullTextExcel}
+                            </table>
+                        </body>
+                        </html>
+                    `;
+                }
+                createDownload(content, `Arvelo_Convertido.${ext}`, mimeType);
             }
         }
 
-        // INIT
+        // --- Init ---
         document.addEventListener('DOMContentLoaded', render);
     </script>
 </body>
