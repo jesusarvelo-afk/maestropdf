@@ -5,9 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Proyect PDF</title>
     
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="favicon.png">
-
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -106,11 +103,31 @@
             },
             {
                 id: 'from-pdf',
-                title: 'PDF a Word / Excel / JPG',
+                title: 'PDF a Formato',
                 description: 'Convierte tus archivos PDF a formatos editables o imágenes.',
                 icon: 'arrow-right-left',
                 iconColor: 'text-red-500 dark:text-red-400',
                 color: 'hover:border-red-500 dark:hover:border-red-400 hover:shadow-red-100 dark:hover:shadow-red-900/20',
+                accept: '.pdf',
+                multiple: false
+            },
+            {
+                id: 'remove-pages',
+                title: 'Eliminar Páginas',
+                description: 'Borra hojas específicas de un documento PDF.',
+                icon: 'trash-2',
+                iconColor: 'text-rose-500 dark:text-rose-400',
+                color: 'hover:border-rose-500 dark:hover:border-rose-400 hover:shadow-rose-100 dark:hover:shadow-rose-900/20',
+                accept: '.pdf',
+                multiple: false
+            },
+            {
+                id: 'number-pages',
+                title: 'Numerar Páginas',
+                description: 'Añade números de página a tu documento PDF.',
+                icon: 'hash',
+                iconColor: 'text-teal-500 dark:text-teal-400',
+                color: 'hover:border-teal-500 dark:hover:border-teal-400 hover:shadow-teal-100 dark:hover:shadow-teal-900/20',
                 accept: '.pdf',
                 multiple: false
             }
@@ -129,6 +146,10 @@
             splitRange: '', 
             compressionLevel: '50',
             isTermsModalOpen: false,
+            isContactOpen: false,
+            contactMessage: '',
+            contactEmail: '',
+            contactStatus: 'idle',
             subscriptionStatus: 'idle', 
             subscriptionEmail: ''
         };
@@ -143,22 +164,21 @@
             html += `
                 <nav class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10 shadow-sm transition-colors duration-300">
                     <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-                        <div class="flex items-center gap-3 cursor-pointer" id="nav-logo">
-                            <img src="favicon.png" alt="Proyect PDF Logo" class="w-8 h-8 object-contain rounded-md shadow-sm">
+                        <div class="flex items-center gap-2 cursor-pointer" id="nav-logo">
+                            <img src="favicon_3.png" alt="Logo" class="w-8 h-8 rounded-md object-contain" onerror="this.style.display='none';">
                             <span class="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Proyect PDF</span>
                         </div>
                         
                         <div class="flex items-center gap-4">
+                            <a href="https://ko-fi.com/jesusarvelo/tip" target="_blank" class="text-sm bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/50 px-4 py-2 rounded-full font-bold transition-colors shadow-sm border border-rose-200 dark:border-rose-800">
+                                Donaciones
+                            </a>
+                        
                             ${state.activeTool ? `
                             <button id="back-btn" class="flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors relative z-20">
                                 <i data-lucide="arrow-left" class="w-4 h-4 pointer-events-none"></i> Volver al inicio
                             </button>
                             ` : ''}
-                            
-                            <!-- Botón de Donaciones -->
-                            <a href="https://ko-fi.com/jesusarvelo/tip" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-900/30 dark:text-rose-400 dark:hover:bg-rose-900/50 transition-colors text-sm font-semibold shadow-sm border border-rose-100 dark:border-rose-800 relative z-20">
-                                Donaciones <span class="text-lg">☕</span>
-                            </a>
                             
                             <button id="theme-toggle" class="p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors relative z-20" aria-label="Cambiar tema">
                                 <i data-lucide="${isDark ? 'sun' : 'moon'}" class="w-5 h-5 pointer-events-none"></i>
@@ -180,25 +200,36 @@
             // Footer
             html += `
                 <footer class="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 mt-auto transition-colors duration-300">
-                    <div class="max-w-6xl mx-auto px-4 py-6 flex flex-col md:flex-row items-center justify-between text-center md:text-left gap-4">
-                        <div class="text-slate-600 dark:text-slate-400 font-medium flex flex-col items-center md:items-start gap-1">
-                            <span class="flex items-center gap-1.5">
-                                <img src="https://flagcdn.com/w20/ve.png" srcset="https://flagcdn.com/w40/ve.png 2x" alt="Venezuela" class="w-4 h-3 rounded-[2px] shadow-sm pointer-events-none">
-                                Desarrollado por Jesús Arvelo & G-AI
+                    <div class="max-w-6xl mx-auto px-4 py-8 flex flex-col md:flex-row items-center justify-between text-center md:text-left gap-4">
+                        <div class="text-sm text-slate-500 dark:text-slate-400 flex flex-col">
+                            <span class="font-medium text-slate-700 dark:text-slate-300">
+                                🇻🇪 Desarrollado por Jesús Arvelo & G-AI
                             </span>
-                            <span class="text-xs font-bold tracking-widest bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">(V. 1.0.1)</span>
+                            <span class="text-xs mt-1 opacity-75">(V. 1.0.1)</span>
                         </div>
-                        <div class="text-sm text-slate-500 dark:text-slate-400 flex flex-col md:flex-row items-center gap-2 md:gap-4">
-                            <span>© ${new Date().getFullYear()} Todos los derechos reservados.</span>
-                            <button id="open-terms-btn" class="text-blue-600 dark:text-blue-400 hover:underline transition-colors">Términos y Condiciones</button>
-                        </div>
+                        <button id="open-terms-btn" class="text-sm text-blue-600 dark:text-blue-400 hover:underline hover:text-blue-800 dark:hover:text-blue-300 transition-colors">
+                            Términos y Condiciones de Uso
+                        </button>
                     </div>
                 </footer>
             `;
 
-            // Terms Modal
+            // Suggestions FAB
+            html += `
+                <button id="open-contact-btn" class="fixed bottom-6 right-6 bg-slate-900 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-500 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-40 group flex items-center gap-2" title="Enviar sugerencia o reporte">
+                    <i data-lucide="message-square" class="w-6 h-6 pointer-events-none"></i>
+                    <span class="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-300 ease-in-out font-medium pointer-events-none">
+                        &nbsp;Sugerencias
+                    </span>
+                </button>
+            `;
+
+            // Modals
             if (state.isTermsModalOpen) {
                 html += renderTermsModal();
+            }
+            if (state.isContactOpen) {
+                html += renderContactModal();
             }
 
             app.innerHTML = html;
@@ -227,7 +258,7 @@
                         <span class="inline-block py-1 px-4 rounded-full bg-blue-500/30 text-blue-100 text-xs font-bold uppercase tracking-wider mb-4 border border-blue-400/30">
                             Próximamente
                         </span>
-                        <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">¡Lleva Proyect PDF en tu bolsillo!</h2>
+                        <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">¡Lleva Maestro PDF en tu bolsillo!</h2>
                         <p class="text-blue-100 mb-8 text-lg">
                             Déjanos tu correo para ser de los primeros en probar nuestra nueva <strong>App para Android</strong> y recibir futuras actualizaciones de la plataforma.
                         </p>
@@ -334,11 +365,11 @@
                             </div>
                             ` : ''}
 
-                            ${tool.id === 'split' ? `
+                            ${(tool.id === 'split' || tool.id === 'remove-pages') ? `
                             <div class="mt-6 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Rango de páginas a extraer (ej. 1, 3, 5-8):</label>
+                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Rango de páginas (ej. 1, 3, 5-8):</label>
                                 <input type="text" id="split-range" value="${state.splitRange}" placeholder="Ej: 1, 3, 5-8" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 transition-colors">
-                                <p class="text-xs text-slate-500 mt-2">Si extraes varias páginas, se descargarán ordenadas independientemente en un archivo .ZIP</p>
+                                <p class="text-xs text-slate-500 mt-2">${tool.id === 'split' ? 'Si extraes varias páginas, se descargarán ordenadas independientemente en un archivo .ZIP' : 'Las páginas especificadas serán eliminadas del documento final.'}</p>
                             </div>
                             ` : ''}
                             
@@ -441,7 +472,7 @@
                         <div class="p-6 overflow-y-auto flex-grow text-slate-600 dark:text-slate-300 text-sm md:text-base leading-relaxed space-y-6">
                             <section>
                                 <h4 class="text-lg font-bold mb-2 text-slate-800 dark:text-white">1. Aceptación de los Términos</h4>
-                                <p>Al acceder y utilizar Proyect PDF, aceptas estos términos en su totalidad. Si no estás de acuerdo con alguna de las condiciones, te invitamos a no utilizar la herramienta.</p>
+                                <p>Al acceder y utilizar Arvelo Maestro PDF, aceptas estos términos en su totalidad. Si no estás de acuerdo con alguna de las condiciones, te invitamos a no utilizar la herramienta.</p>
                             </section>
                             <section>
                                 <h4 class="text-lg font-bold mb-2 text-slate-800 dark:text-white">2. Uso del Servicio</h4>
@@ -459,7 +490,7 @@
                                 <h4 class="text-lg font-bold mb-2 text-slate-800 dark:text-white">4. Propiedad Intelectual y Derechos de Autor</h4>
                                 <ul class="list-disc pl-5 space-y-2">
                                     <li><strong class="text-slate-700 dark:text-slate-200">Tus Archivos:</strong> Tú conservas el 100% de los derechos de autor y de propiedad intelectual sobre cualquier documento, imagen o texto que subas o generes a través de la herramienta.</li>
-                                    <li><strong class="text-slate-700 dark:text-slate-200">La Aplicación:</strong> Todo el código fuente, diseño, estructura, interfaz y el nombre de Proyect PDF son propiedad intelectual exclusiva de Jesús Arvelo. Queda estrictamente prohibida la copia, reproducción, modificación o distribución comercial del aplicativo sin autorización previa.</li>
+                                    <li><strong class="text-slate-700 dark:text-slate-200">La Aplicación:</strong> Todo el código fuente, diseño, estructura, interfaz y el nombre de Arvelo Maestro PDF son propiedad intelectual exclusiva de Jesús Arvelo. Queda estrictamente prohibida la copia, reproducción, modificación o distribución comercial del aplicativo sin autorización previa.</li>
                                 </ul>
                             </section>
                             <section>
@@ -481,6 +512,78 @@
                 </div>
             `;
         }
+
+        // --- STREAMING_CHUNK: Rendering Contact Modal ---
+        function renderContactModal() {
+            return `
+                <div id="contact-modal-overlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-100 transition-opacity">
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden border border-slate-200 dark:border-slate-700 transform scale-100 transition-transform">
+                        
+                        <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
+                            <h2 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                                <i data-lucide="message-square" class="w-6 h-6 text-blue-600 dark:text-blue-500"></i>
+                                Buzón de Sugerencias
+                            </h2>
+                            <button id="close-contact-x" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 rounded-md hover:bg-slate-200 dark:hover:bg-slate-700">
+                                <i data-lucide="x" class="w-6 h-6 pointer-events-none"></i>
+                            </button>
+                        </div>
+
+                        <div class="p-6 overflow-y-auto flex-grow text-slate-600 dark:text-slate-300 text-sm md:text-base leading-relaxed">
+                            ${state.contactStatus === 'success' ? `
+                                <div class="text-center py-8">
+                                    <div class="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors">
+                                        <i data-lucide="check-circle-2" class="w-8 h-8 text-green-600 dark:text-green-500"></i>
+                                    </div>
+                                    <h4 class="text-lg font-bold text-slate-800 dark:text-white mb-2 transition-colors">¡Mensaje enviado!</h4>
+                                    <p class="text-slate-500 dark:text-slate-400 transition-colors">Gracias por ayudarnos a mejorar Proyect PDF.</p>
+                                </div>
+                            ` : `
+                                <form id="contact-form" class="space-y-4">
+                                    <p class="text-sm text-slate-600 dark:text-slate-400 mb-4 transition-colors">
+                                        ¿Encontraste un error? ¿Tienes una idea genial? Escríbela aquí y le llegará directamente al desarrollador.
+                                    </p>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1 transition-colors">Tu Mensaje *</label>
+                                        <textarea 
+                                            id="contact-message"
+                                            required
+                                            placeholder="Escribe tu sugerencia aquí..."
+                                            class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 transition-colors min-h-[120px] resize-none"
+                                        >${state.contactMessage}</textarea>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1 transition-colors">Tu Correo (Opcional)</label>
+                                        <input 
+                                            type="email" 
+                                            id="contact-email"
+                                            placeholder="Por si deseas que te respondamos"
+                                            value="${state.contactEmail}"
+                                            class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 transition-colors"
+                                        />
+                                    </div>
+
+                                    <button 
+                                        type="submit" 
+                                        class="w-full mt-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors"
+                                        ${state.contactStatus === 'sending' ? 'disabled' : ''}
+                                    >
+                                        ${state.contactStatus === 'sending' ? `
+                                            <i data-lucide="loader-2" class="w-5 h-5 animate-spin-slow"></i> Enviando...
+                                        ` : `
+                                            <i data-lucide="send" class="w-5 h-5"></i> Enviar Mensaje
+                                        `}
+                                    </button>
+                                </form>
+                            `}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
 
         // --- STREAMING_CHUNK: Event Listeners & Logic ---
         function attachListeners() {
@@ -530,6 +633,84 @@
             if (closeTermsX) closeTermsX.onclick = closeModal;
             if (termsOverlay) {
                 termsOverlay.onclick = (e) => { if (e.target === termsOverlay) closeModal(); };
+            }
+
+            // Contact Modal
+            const openContactBtn = document.getElementById('open-contact-btn');
+            if (openContactBtn) {
+                openContactBtn.onclick = () => {
+                    state.isContactOpen = true;
+                    render();
+                    document.body.style.overflow = 'hidden';
+                };
+            }
+            const closeContactModal = () => {
+                state.isContactOpen = false;
+                state.contactStatus = 'idle'; // Reset on close
+                render();
+                document.body.style.overflow = 'auto'; 
+            };
+            const closeContactX = document.getElementById('close-contact-x');
+            const contactOverlay = document.getElementById('contact-modal-overlay');
+            if (closeContactX) closeContactX.onclick = closeContactModal;
+            if (contactOverlay) {
+                contactOverlay.onclick = (e) => { if (e.target === contactOverlay) closeContactModal(); };
+            }
+
+            // Contact Form Submit
+            const contactForm = document.getElementById('contact-form');
+            if (contactForm) {
+                contactForm.onsubmit = (e) => {
+                    e.preventDefault();
+                    const messageInput = document.getElementById('contact-message');
+                    const emailInput = document.getElementById('contact-email');
+                    
+                    if (messageInput && messageInput.value) {
+                        state.contactMessage = messageInput.value;
+                        state.contactEmail = emailInput ? emailInput.value : '';
+                        state.contactStatus = 'sending';
+                        render();
+                        
+                        const googleScriptUrl = "https://script.google.com/macros/s/AKfycbzFcQubKPubo319RkUJDeqelQxqjVZ3p2wttrc-hjdP-Rh2V8rTxG0NIgIaQiEgPr11TA/exec";
+
+                        // Using URLSearchParams directly as requested
+                        const formData = new URLSearchParams();
+                        formData.append('mensaje', state.contactMessage);
+                        formData.append('correo', state.contactEmail);
+
+                        fetch(googleScriptUrl, {
+                            method: 'POST',
+                            mode: 'no-cors',
+                            body: formData
+                        })
+                        .then(() => {
+                            state.contactStatus = 'success';
+                            state.contactMessage = '';
+                            state.contactEmail = '';
+                            render();
+                            // Auto-close after 3 seconds
+                            setTimeout(() => {
+                                closeContactModal();
+                            }, 3000);
+                        })
+                        .catch(error => {
+                            console.error("Error al enviar:", error);
+                            state.contactStatus = 'idle';
+                            alert("Hubo un problema de conexión. Por favor intenta más tarde.");
+                            render();
+                        });
+                    }
+                };
+            }
+            
+            // Re-bind inputs on render so typing works smoothly
+            const contactMessageInput = document.getElementById('contact-message');
+            if (contactMessageInput) {
+                contactMessageInput.oninput = (e) => { state.contactMessage = e.target.value; };
+            }
+            const contactEmailInput = document.getElementById('contact-email');
+            if (contactEmailInput) {
+                contactEmailInput.oninput = (e) => { state.contactEmail = e.target.value; };
             }
 
             // Subscription Form
@@ -694,6 +875,10 @@
                     await processCreatePdf();
                 } else if (state.activeTool.id === 'from-pdf') {
                     await processFromPdf();
+                } else if (state.activeTool.id === 'remove-pages') {
+                    await processRemovePages();
+                } else if (state.activeTool.id === 'number-pages') {
+                    await processNumberPages();
                 }
             } catch (error) {
                 console.error("Error en procesamiento:", error);
@@ -927,6 +1112,61 @@
                 }
                 createDownload(content, `Arvelo_Convertido.${ext}`, mimeType);
             }
+        }
+
+        async function processRemovePages() {
+            const { PDFDocument } = window.PDFLib;
+            const file = state.files[0];
+            const arrayBuffer = await file.arrayBuffer();
+            
+            const originalPdf = await PDFDocument.load(arrayBuffer);
+            const totalPages = originalPdf.getPageCount();
+            const pagesToRemove = parsePageRange(state.splitRange, totalPages);
+            
+            if (pagesToRemove.length === 0) throw new Error("Rango inválido");
+
+            const newPdf = await PDFDocument.create();
+            const pagesToKeep = [];
+            for (let i = 0; i < totalPages; i++) {
+                if (!pagesToRemove.includes(i)) {
+                    pagesToKeep.push(i);
+                }
+            }
+
+            if (pagesToKeep.length === 0) throw new Error("No puedes eliminar todas las páginas del documento.");
+
+            const copiedPages = await newPdf.copyPages(originalPdf, pagesToKeep);
+            copiedPages.forEach((page) => newPdf.addPage(page));
+
+            const bytes = await newPdf.save();
+            createDownload(bytes, `Arvelo_Editado_${file.name}`, 'application/pdf');
+        }
+
+        async function processNumberPages() {
+            const { PDFDocument, StandardFonts, rgb } = window.PDFLib;
+            const file = state.files[0];
+            const arrayBuffer = await file.arrayBuffer();
+            
+            const pdfDoc = await PDFDocument.load(arrayBuffer);
+            const pages = pdfDoc.getPages();
+            const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+            pages.forEach((page, idx) => {
+                const { width } = page.getSize();
+                const text = `${idx + 1}`;
+                const textWidth = helveticaFont.widthOfTextAtSize(text, 12);
+                
+                page.drawText(text, {
+                    x: width / 2 - textWidth / 2,
+                    y: 20,
+                    size: 12,
+                    font: helveticaFont,
+                    color: rgb(0, 0, 0)
+                });
+            });
+
+            const bytes = await pdfDoc.save();
+            createDownload(bytes, `Arvelo_Numerado_${file.name}`, 'application/pdf');
         }
 
         // --- Init ---
