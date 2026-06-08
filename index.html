@@ -719,7 +719,6 @@
                         
                         const googleScriptUrl = "https://script.google.com/macros/s/AKfycbzFcQubKPubo319RkUJDeqelQxqjVZ3p2wttrc-hjdP-Rh2V8rTxG0NIgIaQiEgPr11TA/exec";
 
-                        // Using URLSearchParams directly as requested
                         const formData = new URLSearchParams();
                         formData.append('mensaje', state.contactMessage);
                         formData.append('correo', state.contactEmail);
@@ -734,7 +733,6 @@
                             state.contactMessage = '';
                             state.contactEmail = '';
                             render();
-                            // Auto-close after 3 seconds
                             setTimeout(() => {
                                 closeContactModal();
                             }, 3000);
@@ -1191,21 +1189,51 @@
             const pdfDoc = await loadingTask.promise;
 
             if (format === 'jpg' || format === 'png') {
-                const page = await pdfDoc.getPage(1);
-                const viewport = page.getViewport({ scale: 2.0 }); 
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                canvas.width = viewport.width;
-                canvas.height = viewport.height;
-                
-                await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-                
+                if (!window.JSZip) throw new Error("ZIP no disponible para extraer múltiples imágenes");
+                const zip = new JSZip();
                 const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
-                const dataUrl = canvas.toDataURL(mimeType, 1.0);
-                const res = await fetch(dataUrl);
-                const imgBytes = await res.arrayBuffer();
                 
-                createDownload(imgBytes, `Arvelo_Imagen.${format}`, mimeType);
+                // Iterar sobre todas las páginas para convertirlas a imagen
+                for (let i = 1; i <= pdfDoc.numPages; i++) {
+                    const page = await pdfDoc.getPage(i);
+                    const viewport = page.getViewport({ scale: 2.0 }); 
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+                    
+                    await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+                    
+                    const dataUrl = canvas.toDataURL(mimeType, 1.0);
+                    const res = await fetch(dataUrl);
+                    const imgBytes = await res.arrayBuffer();
+                    
+                    // Añadir al ZIP
+                    zip.file(`Pagina_${i}.${format}`, imgBytes);
+                }
+                
+                // Si es solo una página, descargarla directo
+                if (pdfDoc.numPages === 1) {
+                    const page = await pdfDoc.getPage(1);
+                    const viewport = page.getViewport({ scale: 2.0 }); 
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+                    await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+                    const dataUrl = canvas.toDataURL(mimeType, 1.0);
+                    const res = await fetch(dataUrl);
+                    const imgBytes = await res.arrayBuffer();
+                    createDownload(imgBytes, `Arvelo_Imagen.${format}`, mimeType);
+                } else {
+                    // Si son varias, descargar el ZIP
+                    const zipContent = await zip.generateAsync({type:"blob"});
+                    const url = URL.createObjectURL(zipContent);
+                    state.downloadUrl = url;
+                    state.downloadName = `Imagenes_Extraidas.zip`;
+                    state.processingState = 'done';
+                    render();
+                }
             } else {
                 let fullTextHtml = "";
                 let fullTextExcel = "";
