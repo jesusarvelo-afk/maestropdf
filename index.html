@@ -529,7 +529,20 @@
                             <button id="close-terms-x" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button>
                         </div>
                         <div class="p-6 overflow-y-auto flex-grow text-slate-600 dark:text-slate-300 text-sm md:text-base space-y-4">
-                            <p>Herramienta creada con fines de utilidad personal. Privacidad absoluta: los archivos se procesan localmente en el navegador y no se envían a servidores externos. El uso indebido es responsabilidad del usuario.</p>
+                            
+                            <h3 class="font-bold text-slate-800 dark:text-white text-base">1. Privacidad y Seguridad (Procesamiento Local)</h3>
+                            <p>Arvelo Maestro PDF está diseñado bajo una arquitectura de privacidad estricta. Todo el procesamiento de archivos (unir, dividir, comprimir, etc.) se realiza <strong>localmente en su navegador (Client-Side)</strong>. Sus documentos, imágenes y fotografías tomadas con la herramienta de escáner <strong>nunca son subidos, enviados ni almacenados en ningún servidor externo</strong>.</p>
+                            
+                            <h3 class="font-bold text-slate-800 dark:text-white mt-4 text-base">2. Uso de la Herramienta y Responsabilidad</h3>
+                            <p>Esta aplicación web se proporciona de forma gratuita para uso personal o profesional. El usuario es el único responsable del contenido de los documentos procesados y de garantizar que posee los derechos legales correspondientes sobre los mismos.</p>
+                            <p>El desarrollador (Jesús Arvelo) no se hace responsable por la pérdida de datos, corrupción de archivos o cualquier daño directo o indirecto derivado del uso de esta herramienta. Se recomienda a los usuarios mantener siempre copias de seguridad de sus archivos originales antes de procesarlos.</p>
+
+                            <h3 class="font-bold text-slate-800 dark:text-white mt-4 text-base">3. Acceso a la Cámara (Función Escáner)</h3>
+                            <p>El acceso a la cámara de su dispositivo se solicita única y exclusivamente para la función de "Escanear Documento". Las imágenes capturadas son procesadas de manera temporal en la memoria RAM de su equipo para generar el documento PDF final y se descartan automáticamente del sistema al finalizar el proceso o al cerrar la herramienta.</p>
+
+                            <h3 class="font-bold text-slate-800 dark:text-white mt-4 text-base">4. Propiedad Intelectual</h3>
+                            <p>El código base de la aplicación, el diseño de la interfaz y la marca "Arvelo Maestro PDF" son propiedad intelectual de Jesús Arvelo. Queda estrictamente prohibida su venta, redistribución comercial, clonación o copia sin la autorización explícita del autor.</p>
+
                         </div>
                         <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end">
                             <button id="close-terms-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg shadow-sm">Entendido</button>
@@ -856,7 +869,6 @@
                         mergedPdf.addPage(page);
                     });
                 } else if (file.type.startsWith('image/')) {
-                    // Si es imagen, la dibujamos en un canvas oculto para rotarla de forma segura y luego embedirla
                     const isPng = file.type === 'image/png';
                     const arrayBuffer = await new Promise((resolve) => {
                         const img = new Image();
@@ -900,7 +912,6 @@
             const totalPages = originalPdf.getPageCount();
             const pagesToKeep = parsePageRange(state.splitRange, totalPages);
             
-            // Los índices en pdf-lib empiezan en 0
             const indicesToKeep = pagesToKeep.map(p => p - 1);
             
             const copiedPages = await newPdf.copyPages(originalPdf, indicesToKeep);
@@ -919,7 +930,6 @@
             const totalPages = originalPdf.getPageCount();
             const pagesToRemove = parsePageRange(state.splitRange, totalPages);
             
-            // Eliminar de atrás hacia adelante para no alterar los índices
             const indicesToRemove = pagesToRemove.map(p => p - 1).sort((a,b) => b - a);
             
             indicesToRemove.forEach(index => {
@@ -964,12 +974,11 @@
             const pdfjsDoc = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
             const newPdf = await PDFDocument.create();
             
-            // Calculamos calidad JPEG basada en el slider (10 a 90)
             const quality = parseInt(state.compressionLevel) / 100;
             
             for (let i = 1; i <= pdfjsDoc.numPages; i++) {
                 const page = await pdfjsDoc.getPage(i);
-                const viewport = page.getViewport({ scale: 1.5 }); // Escala reducida para comprimir
+                const viewport = page.getViewport({ scale: 1.5 });
                 
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
@@ -994,7 +1003,6 @@
             const { PDFDocument, StandardFonts, rgb } = window.PDFLib;
             const newPdf = await PDFDocument.create();
 
-            // Helper para dibujar texto con saltos de línea y sanitizado contra Emojis
             const drawTextToPdf = async (rawText, pdf, rgb) => {
                 const font = await pdf.embedFont(StandardFonts.Helvetica);
                 const fontSize = 11;
@@ -1043,18 +1051,28 @@
                     await drawTextToPdf(text, newPdf, rgb);
                 } else if (extension === 'docx') {
                     const arrayBuffer = await file.arrayBuffer();
-                    const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
-                    await drawTextToPdf(result.value || "El documento parece estar vacío.", newPdf, rgb);
+                    try {
+                        const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+                        await drawTextToPdf(result.value || "El documento parece estar vacío.", newPdf, rgb);
+                    } catch (e) {
+                        console.error("Error leyendo DOCX", e);
+                        await drawTextToPdf("Error al procesar el archivo de Word.", newPdf, rgb);
+                    }
                 } else if (extension === 'xlsx' || extension === 'xls') {
                     const arrayBuffer = await file.arrayBuffer();
-                    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-                    let text = "";
-                    workbook.SheetNames.forEach(sheetName => {
-                        text += `\n--- HOJA: ${sheetName} ---\n\n`;
-                        const roa = XLSX.utils.sheet_to_txt(workbook.Sheets[sheetName]);
-                        if (roa.length > 0) text += roa + "\n";
-                    });
-                    await drawTextToPdf(text, newPdf, rgb);
+                    try {
+                        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                        let text = "";
+                        workbook.SheetNames.forEach(sheetName => {
+                            text += `\n--- HOJA: ${sheetName} ---\n\n`;
+                            const roa = XLSX.utils.sheet_to_txt(workbook.Sheets[sheetName]);
+                            if (roa.length > 0) text += roa + "\n";
+                        });
+                        await drawTextToPdf(text, newPdf, rgb);
+                    } catch (e) {
+                        console.error("Error leyendo Excel", e);
+                        await drawTextToPdf("Error al procesar el archivo de Excel.", newPdf, rgb);
+                    }
                 } else if (['jpg', 'jpeg', 'png'].includes(extension)) {
                     const isPng = extension === 'png';
                     const arrayBuffer = await new Promise((resolve) => {
@@ -1093,7 +1111,7 @@
             const pdfDoc = await pdfjsLibObj.getDocument({data: arrayBuffer}).promise;
 
             if (format === 'jpg' || format === 'png') {
-                if (!window.JSZip) throw new Error("ZIP no disponible");
+                if (!window.JSZip) throw new Error("ZIP no disponible para extraer múltiples imágenes");
                 const zip = new JSZip();
                 const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
                 
@@ -1104,16 +1122,27 @@
                     const ctx = canvas.getContext('2d');
                     canvas.width = viewport.width;
                     canvas.height = viewport.height;
+                    
                     await page.render({ canvasContext: ctx, viewport: viewport }).promise;
                     
                     const blob = await new Promise(resolve => canvas.toBlob(resolve, mimeType, 1.0));
                     const imgBytes = await blob.arrayBuffer();
+                    
                     zip.file(`Pagina_${i}.${format}`, imgBytes);
                 }
                 
                 if (pdfDoc.numPages === 1) {
-                    const content = await zip.file(`Pagina_1.${format}`).async("blob");
-                    createDownload(content, `Extraido.${format}`, mimeType);
+                    const page = await pdfDoc.getPage(1);
+                    const viewport = page.getViewport({ scale: 2.0 }); 
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+                    await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+                    
+                    const blob = await new Promise(resolve => canvas.toBlob(resolve, mimeType, 1.0));
+                    const imgBytes = await blob.arrayBuffer();
+                    createDownload(imgBytes, `Arvelo_Imagen.${format}`, mimeType);
                 } else {
                     const zipContent = await zip.generateAsync({type:"blob"});
                     createDownload(zipContent, `Imagenes_Extraidas.zip`, 'application/zip');
@@ -1130,26 +1159,44 @@
                     fullTextExcel += `<tr><td>Página ${i}</td><td>${textItems}</td></tr>`;
                 }
 
+                let content = "";
+                let ext = "";
+                let mimeType = "";
+
                 if (format === 'doc') {
-                    const content = `
+                    ext = 'doc'; 
+                    mimeType = 'application/msword';
+                    content = `
                         <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
                         <head><meta charset="utf-8"><title>Documento</title></head>
-                        <body><h1>Extraído de: ${file.name}</h1><hr>${fullTextHtml}</body></html>
+                        <body>
+                            <h1>Contenido de: ${file.name}</h1>
+                            <hr>
+                            ${fullTextHtml}
+                        </body>
+                        </html>
                     `;
-                    createDownload(content, `Extraido.doc`, 'application/msword');
                 } else if (format === 'xls') {
-                    const content = `
+                    ext = 'xls'; 
+                    mimeType = 'application/vnd.ms-excel';
+                    content = `
                         <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
                         <head><meta charset="utf-8"></head>
-                        <body><table border="1"><tr><th colspan="2" style="background-color:#4CAF50;color:white;">Contenido de: ${file.name}</th></tr>${fullTextExcel}</table></body></html>
+                        <body>
+                            <table border="1">
+                                <tr><th colspan="2" style="background-color:#4CAF50;color:white;">Contenido de: ${file.name}</th></tr>
+                                ${fullTextExcel}
+                            </table>
+                        </body>
+                        </html>
                     `;
-                    createDownload(content, `Extraido.xls`, 'application/vnd.ms-excel');
                 }
+                createDownload(content, `Arvelo_Convertido.${ext}`, mimeType);
             }
         }
 
         async function processConvertWebp() {
-            const format = state.selectedImageFormat; // jpg, jpeg o png
+            const format = state.selectedImageFormat;
             const file = state.files[0];
             
             const objectUrl = URL.createObjectURL(file);
@@ -1174,13 +1221,17 @@
             ctx.drawImage(img, 0, 0);
             
             const mimeType = (format === 'png') ? 'image/png' : 'image/jpeg';
+            
             const blob = await new Promise(resolve => canvas.toBlob(resolve, mimeType, 1.0));
             const arrayBuffer = await blob.arrayBuffer();
             
             URL.revokeObjectURL(objectUrl);
+            canvas.width = 0;
+            canvas.height = 0;
             
             const originalName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
             const newName = `${originalName}_convertido.${format}`;
+            
             createDownload(arrayBuffer, newName, mimeType);
         }
 
