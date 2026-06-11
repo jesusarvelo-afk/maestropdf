@@ -34,6 +34,12 @@
     <!-- JSZip para empaquetar en ZIP -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     
+    <!-- Mammoth para leer DOCX -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    
+    <!-- SheetJS para leer XLSX y XLS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
@@ -101,7 +107,7 @@
                 icon: 'file-plus-2',
                 iconColor: 'text-purple-500 dark:text-purple-400',
                 color: 'hover:border-purple-500 dark:hover:border-purple-400 hover:shadow-purple-100 dark:hover:shadow-purple-900/20',
-                accept: '.txt, .doc, .docx, .xls, .xlsx, .jpg, .jpeg, .png, image/jpeg, image/png',
+                accept: '.txt, .docx, .xlsx, .jpg, .jpeg, .png, image/jpeg, image/png',
                 multiple: true
             },
             {
@@ -157,7 +163,7 @@
             errorMessage: '',
             downloadUrl: null,
             downloadName: '',
-            selectedExportFormat: 'docx',
+            selectedExportFormat: 'doc',
             selectedImageFormat: 'jpg', // Formato de exportación para WEBP
             splitRange: '', 
             compressionLevel: '50',
@@ -392,8 +398,8 @@
                             <div class="mt-6 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
                                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Convertir a:</label>
                                 <select id="export-format" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 transition-colors">
-                                    <option value="docx" ${state.selectedExportFormat === 'docx' ? 'selected' : ''}>Microsoft Word (.docx)</option>
-                                    <option value="xlsx" ${state.selectedExportFormat === 'xlsx' ? 'selected' : ''}>Microsoft Excel (.xlsx)</option>
+                                    <option value="doc" ${state.selectedExportFormat === 'doc' ? 'selected' : ''}>Microsoft Word (.doc)</option>
+                                    <option value="xls" ${state.selectedExportFormat === 'xls' ? 'selected' : ''}>Microsoft Excel (.xls)</option>
                                     <option value="jpg" ${state.selectedExportFormat === 'jpg' ? 'selected' : ''}>Imagen JPEG (.jpg)</option>
                                     <option value="png" ${state.selectedExportFormat === 'png' ? 'selected' : ''}>Imagen PNG (.png)</option>
                                 </select>
@@ -1132,6 +1138,45 @@
                 });
             };
 
+            // Helper para dibujar texto largo con salto de línea automático
+            const drawTextToPdf = async (rawText, pdf, rgb) => {
+                const font = await pdf.embedFont(StandardFonts.Helvetica);
+                const fontSize = 11;
+                let page = pdf.addPage();
+                let { width, height } = page.getSize();
+                let yPos = height - 50;
+                const margin = 50;
+                const maxWidth = width - (margin * 2);
+
+                // Sanear el texto para evitar que caracteres no soportados (ej. Emojis) rompan PDF-lib
+                const text = rawText.replace(/[^\x00-\xFF\u0152\u0153\u0178\u0192\u2013\u2014\u2018\u2019\u201A\u201C\u201D\u201E\u2020\u2021\u2022\u2026\u2030\u2039\u203A\u20AC]/g, "");
+
+                const lines = text.split('\n');
+                for (let line of lines) {
+                    let currentLine = '';
+                    const words = line.split(' ');
+                    for (let word of words) {
+                        const testLine = currentLine + word + ' ';
+                        let testWidth = 0;
+                        try { testWidth = font.widthOfTextAtSize(testLine, fontSize); } catch(e) { testWidth = maxWidth + 1; }
+                        
+                        if (testWidth > maxWidth && currentLine !== '') {
+                            if (yPos < 50) { page = pdf.addPage(); yPos = height - 50; }
+                            try { page.drawText(currentLine, { x: margin, y: yPos, size: fontSize, font: font, color: rgb(0,0,0) }); } catch(e) {}
+                            yPos -= 15;
+                            currentLine = word + ' ';
+                        } else {
+                            currentLine = testLine;
+                        }
+                    }
+                    if (currentLine.trim() !== '') {
+                        if (yPos < 50) { page = pdf.addPage(); yPos = height - 50; }
+                        try { page.drawText(currentLine, { x: margin, y: yPos, size: fontSize, font: font, color: rgb(0,0,0) }); } catch(e) {}
+                        yPos -= 15;
+                    }
+                }
+            };
+
             for (let i = 0; i < state.files.length; i++) {
                 const file = state.files[i];
                 const angle = state.fileRotations[i] || 0;
@@ -1140,22 +1185,30 @@
                 if (extension === 'txt') {
                     const arrayBuffer = await file.arrayBuffer();
                     const text = new TextDecoder("utf-8").decode(arrayBuffer);
-                    const font = await newPdf.embedFont(StandardFonts.Helvetica);
-                    const fontSize = 12;
-                    let page = newPdf.addPage();
-                    let { width, height } = page.getSize();
-                    let yPos = height - 50;
-
-                    const lines = text.split('\n');
-                    for (const line of lines) {
-                        if (yPos < 50) {
-                            page = newPdf.addPage();
-                            yPos = height - 50;
-                        }
-                        try {
-                            page.drawText(line.replace(/\r/g, ''), { x: 50, y: yPos, size: fontSize, font: font, color: rgb(0,0,0) });
-                        } catch(e) {}
-                        yPos -= 15;
+                    await drawTextToPdf(text, newPdf, rgb);
+                } else if (extension === 'docx') {
+                    const arrayBuffer = await file.arrayBuffer();
+                    try {
+                        const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+                        await drawTextToPdf(result.value || "El documento parece estar vacío.", newPdf, rgb);
+                    } catch (e) {
+                        console.error("Error leyendo DOCX", e);
+                        await drawTextToPdf("Error al procesar el archivo de Word.", newPdf, rgb);
+                    }
+                } else if (extension === 'xlsx' || extension === 'xls') {
+                    const arrayBuffer = await file.arrayBuffer();
+                    try {
+                        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                        let text = "";
+                        workbook.SheetNames.forEach(sheetName => {
+                            text += `\n--- HOJA: ${sheetName} ---\n\n`;
+                            const roa = XLSX.utils.sheet_to_txt(workbook.Sheets[sheetName]);
+                            if (roa.length > 0) text += roa + "\n";
+                        });
+                        await drawTextToPdf(text, newPdf, rgb);
+                    } catch (e) {
+                        console.error("Error leyendo Excel", e);
+                        await drawTextToPdf("Error al procesar el archivo de Excel.", newPdf, rgb);
                     }
                 } else if (['jpg', 'jpeg', 'png'].includes(extension)) {
                     const isPng = extension === 'png';
@@ -1204,9 +1257,9 @@
                     
                     await page.render({ canvasContext: ctx, viewport: viewport }).promise;
                     
-                    const dataUrl = canvas.toDataURL(mimeType, 1.0);
-                    const res = await fetch(dataUrl);
-                    const imgBytes = await res.arrayBuffer();
+                    // Optimización de memoria usando toBlob en lugar de toDataURL
+                    const blob = await new Promise(resolve => canvas.toBlob(resolve, mimeType, 1.0));
+                    const imgBytes = await blob.arrayBuffer();
                     
                     // Añadir al ZIP
                     zip.file(`Pagina_${i}.${format}`, imgBytes);
@@ -1221,9 +1274,9 @@
                     canvas.width = viewport.width;
                     canvas.height = viewport.height;
                     await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-                    const dataUrl = canvas.toDataURL(mimeType, 1.0);
-                    const res = await fetch(dataUrl);
-                    const imgBytes = await res.arrayBuffer();
+                    
+                    const blob = await new Promise(resolve => canvas.toBlob(resolve, mimeType, 1.0));
+                    const imgBytes = await blob.arrayBuffer();
                     createDownload(imgBytes, `Arvelo_Imagen.${format}`, mimeType);
                 } else {
                     // Si son varias, descargar el ZIP
@@ -1251,7 +1304,7 @@
                 let ext = "";
                 let mimeType = "";
 
-                if (format === 'docx') {
+                if (format === 'doc') {
                     ext = 'doc'; 
                     mimeType = 'application/msword';
                     content = `
@@ -1264,7 +1317,7 @@
                         </body>
                         </html>
                     `;
-                } else if (format === 'xlsx') {
+                } else if (format === 'xls') {
                     ext = 'xls'; 
                     mimeType = 'application/vnd.ms-excel';
                     content = `
@@ -1365,10 +1418,10 @@
             ctx.drawImage(img, 0, 0);
             
             const mimeType = (format === 'png') ? 'image/png' : 'image/jpeg';
-            const dataUrl = canvas.toDataURL(mimeType, 1.0);
             
-            const res = await fetch(dataUrl);
-            const arrayBuffer = await res.arrayBuffer();
+            // Optimización de memoria
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, mimeType, 1.0));
+            const arrayBuffer = await blob.arrayBuffer();
             
             URL.revokeObjectURL(objectUrl);
             canvas.width = 0;
