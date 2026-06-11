@@ -22,16 +22,16 @@
         }
     </script>
     
-    <!-- PDF-Lib para procesamiento de PDFs (Unir, Crear, Dividir) -->
+    <!-- PDF-Lib para procesamiento de PDFs (Unir, Crear, Dividir, Numerar) -->
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     
-    <!-- PDF.js para renderizado (Compresión) y extracción de texto -->
+    <!-- PDF.js para renderizado (Compresión) y extracción a imágenes -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     </script>
 
-    <!-- JSZip para empaquetar en ZIP -->
+    <!-- JSZip para empaquetar en ZIP (Extracción de múltiples imágenes) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     
     <!-- Mammoth para leer DOCX -->
@@ -61,14 +61,14 @@
     <div id="app" class="flex flex-col flex-grow"></div>
 
     <script>
-        // --- STREAMING_CHUNK: Initializing Dark Mode ---
+        // --- Tema Oscuro ---
         if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
         } else {
             document.documentElement.classList.remove('dark');
         }
 
-        // --- STREAMING_CHUNK: Configuring Tools Array ---
+        // --- Configuración de las 9 Herramientas ---
         const TOOLS = [
             {
                 id: 'merge',
@@ -103,7 +103,7 @@
             {
                 id: 'to-pdf',
                 title: 'Crear PDF',
-                description: 'Crea archivos PDF a partir de textos (.txt) o imágenes.',
+                description: 'Crea archivos PDF a partir de textos (.txt), Word, Excel o imágenes.',
                 icon: 'file-plus-2',
                 iconColor: 'text-purple-500 dark:text-purple-400',
                 color: 'hover:border-purple-500 dark:hover:border-purple-400 hover:shadow-purple-100 dark:hover:shadow-purple-900/20',
@@ -113,7 +113,7 @@
             {
                 id: 'scan',
                 title: 'Escanear Documento',
-                description: 'Usa tu cámara para tomar fotos de documentos y convertirlos en PDF.',
+                description: 'Usa tu cámara para tomar fotos de documentos y convertirlos en PDF.<br><span class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-2 block">* Solo disponible en móviles y tablets.</span>',
                 icon: 'camera',
                 iconColor: 'text-emerald-500 dark:text-emerald-400',
                 color: 'hover:border-emerald-500 dark:hover:border-emerald-400 hover:shadow-emerald-100 dark:hover:shadow-emerald-900/20',
@@ -123,7 +123,7 @@
             {
                 id: 'from-pdf',
                 title: 'PDF a Formato',
-                description: 'Convierte tus archivos PDF a formatos editables o imágenes.',
+                description: 'Convierte tus archivos PDF a formatos editables (Word/Excel) o imágenes.',
                 icon: 'arrow-right-left',
                 iconColor: 'text-red-500 dark:text-red-400',
                 color: 'hover:border-red-500 dark:hover:border-red-400 hover:shadow-red-100 dark:hover:shadow-red-900/20',
@@ -162,7 +162,7 @@
             }
         ];
 
-        // --- STREAMING_CHUNK: Initializing State Variables ---
+        // --- Variables de Estado ---
         let state = {
             activeTool: null,
             files: [],
@@ -178,15 +178,14 @@
             splitRange: '', 
             compressionLevel: '50',
             isTermsModalOpen: false,
-            subscriptionStatus: 'idle', 
-            subscriptionEmail: '',
-            // Variables para la cámara
+            isContactOpen: false,
+            // Variables Escáner
             cameraStream: null,
             scannedBlobs: [],
             scannedPreviews: []
         };
 
-        // --- STREAMING_CHUNK: Rendering Main App Layout ---
+        // --- Renderizado Principal ---
         function render() {
             const app = document.getElementById('app');
             const isDark = document.documentElement.classList.contains('dark');
@@ -220,7 +219,7 @@
                 </nav>
             `;
 
-            // Main Content
+            // Contenido Principal
             html += '<main class="flex-grow flex flex-col">';
             if (!state.activeTool) {
                 html += renderHome();
@@ -246,7 +245,7 @@
                 </footer>
             `;
 
-            // Suggestions FAB
+            // Botón Sugerencias
             html += `
                 <button id="open-contact-btn" class="fixed bottom-6 right-6 bg-slate-900 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-500 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-40 group flex items-center gap-2" title="Enviar sugerencia o reporte">
                     <i data-lucide="message-square" class="w-6 h-6 pointer-events-none"></i>
@@ -256,16 +255,23 @@
                 </button>
             `;
 
-            // Modals
+            // Modales
             if (state.isTermsModalOpen) html += renderTermsModal();
             if (state.isContactOpen) html += renderContactModal();
 
             app.innerHTML = html;
             lucide.createIcons();
             attachListeners();
+
+            // Parche: Reconectar cámara si se redibuja la interfaz
+            if (state.activeTool && state.activeTool.id === 'scan' && state.cameraStream) {
+                const video = document.getElementById('camera-video');
+                if (video && video.srcObject !== state.cameraStream) {
+                    video.srcObject = state.cameraStream;
+                }
+            }
         }
 
-        // --- STREAMING_CHUNK: Rendering Home View with CTA ---
         function renderHome() {
             let cardsHtml = TOOLS.map(tool => `
                 <div data-id="${tool.id}" class="tool-card flex flex-col h-full bg-white dark:bg-slate-800 p-6 rounded-2xl border-2 border-slate-100 dark:border-slate-700 cursor-pointer transition-all duration-200 shadow-sm hover:-translate-y-1 ${tool.color}">
@@ -287,13 +293,11 @@
                             Todas las herramientas que necesitas para trabajar con archivos PDF en un solo lugar. 
                             Rápido, seguro y fácil de usar directamente en tu navegador.
                         </p>
-                        
                         <div class="inline-flex items-center gap-2 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-[#39ff14] px-4 py-2 rounded-full border border-green-200 dark:border-[#39ff14]/30 shadow-sm dark:shadow-[0_0_15px_rgba(57,255,20,0.1)] transition-colors">
                             <i data-lucide="lock" class="w-4 h-4"></i>
                             <span class="text-sm font-semibold tracking-wide">Privacidad Absoluta: Tus archivos nunca salen de tu ordenador</span>
                         </div>
                     </div>
-                    
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                         ${cardsHtml}
                     </div>
@@ -301,21 +305,16 @@
             `;
         }
 
-        // --- STREAMING_CHUNK: Rendering Workspace View ---
         function renderWorkspace() {
             const tool = state.activeTool;
             let workspaceContent = '';
 
             if (state.processingState === 'idle') {
-                
-                // INTERFAZ ESPECIAL PARA LA CÁMARA (ESCANEAR DOCUMENTO)
                 if (tool.id === 'scan') {
                     workspaceContent = `
                     <div class="p-6 md:p-8">
                         <div class="relative w-full max-w-2xl mx-auto bg-black rounded-2xl overflow-hidden shadow-lg border border-slate-700 aspect-[3/4] md:aspect-video flex items-center justify-center">
                             <video id="camera-video" autoplay playsinline class="absolute inset-0 w-full h-full object-cover"></video>
-                            
-                            <!-- Interfaz de la cámara superpuesta -->
                             <div class="absolute bottom-6 left-0 right-0 flex items-center justify-center gap-8 px-4 z-10">
                                 <button id="capture-btn" class="w-16 h-16 md:w-20 md:h-20 bg-white/30 backdrop-blur-md border-4 border-white rounded-full flex items-center justify-center hover:bg-white/50 transition-colors shadow-xl">
                                     <div class="w-12 h-12 md:w-16 md:h-16 bg-white rounded-full"></div>
@@ -340,7 +339,6 @@
                                 </div>
                                 `).join('')}
                             </div>
-                            
                             <div class="flex justify-end">
                                 <button id="process-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-8 rounded-xl flex items-center gap-2 transition-colors shadow-md">
                                     Crear PDF con estas fotos <i data-lucide="check-circle-2" class="w-5 h-5 pointer-events-none"></i>
@@ -351,7 +349,6 @@
                     </div>
                     `;
                 } 
-                // INTERFAZ ESTÁNDAR (ARRASTRAR Y SOLTAR)
                 else {
                     workspaceContent = `
                     <div class="p-8">
@@ -417,6 +414,38 @@
                                     <option value="jpg" ${state.selectedExportFormat === 'jpg' ? 'selected' : ''}>Imagen JPEG (.jpg)</option>
                                     <option value="png" ${state.selectedExportFormat === 'png' ? 'selected' : ''}>Imagen PNG (.png)</option>
                                 </select>
+                            </div>
+                            ` : ''}
+
+                            ${tool.id === 'convert-webp' ? `
+                            <div class="mt-6 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Formato de salida:</label>
+                                <select id="image-export-format" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 transition-colors">
+                                    <option value="jpg" ${state.selectedImageFormat === 'jpg' ? 'selected' : ''}>Imagen JPEG (.jpg) - Recomendado</option>
+                                    <option value="jpeg" ${state.selectedImageFormat === 'jpeg' ? 'selected' : ''}>Imagen JPEG (.jpeg)</option>
+                                    <option value="png" ${state.selectedImageFormat === 'png' ? 'selected' : ''}>Imagen PNG (.png) - Mantiene transparencia</option>
+                                </select>
+                            </div>
+                            ` : ''}
+
+                            ${(tool.id === 'split' || tool.id === 'remove-pages') ? `
+                            <div class="mt-6 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                    ${tool.id === 'split' ? 'Páginas a extraer (ej. 1, 3, 5-8):' : 'Páginas a eliminar (ej. 1, 3, 5-8):'}
+                                </label>
+                                <input type="text" id="page-range" value="${state.splitRange}" placeholder="Dejar en blanco para procesar todo" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 transition-colors">
+                            </div>
+                            ` : ''}
+
+                            ${tool.id === 'compress' ? `
+                            <div class="mt-6 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Nivel de compresión:</label>
+                                <input type="range" id="compression-level" min="10" max="90" value="${state.compressionLevel}" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-700">
+                                <div class="flex justify-between text-xs text-slate-500 dark:text-slate-400 mt-2">
+                                    <span>Más pequeño</span>
+                                    <span>Equilibrado</span>
+                                    <span>Mejor calidad</span>
+                                </div>
                             </div>
                             ` : ''}
 
@@ -491,7 +520,7 @@
             `;
         }
 
-        // --- STREAMING_CHUNK: Modals ---
+        // --- Modales ---
         function renderTermsModal() {
             return `<div id="terms-modal-overlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-100 transition-opacity">
                     <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-700">
@@ -500,7 +529,7 @@
                             <button id="close-terms-x" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button>
                         </div>
                         <div class="p-6 overflow-y-auto flex-grow text-slate-600 dark:text-slate-300 text-sm md:text-base space-y-4">
-                            <p>Herramienta creada con fines de utilidad personal. Privacidad absoluta: los archivos se procesan en tu navegador y no se envían a servidores externos. El uso indebido es responsabilidad del usuario.</p>
+                            <p>Herramienta creada con fines de utilidad personal. Privacidad absoluta: los archivos se procesan localmente en el navegador y no se envían a servidores externos. El uso indebido es responsabilidad del usuario.</p>
                         </div>
                         <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end">
                             <button id="close-terms-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg shadow-sm">Entendido</button>
@@ -525,7 +554,7 @@
                 </div>`;
         }
 
-        // --- STREAMING_CHUNK: Camera Management ---
+        // --- Gestión de Cámara (Escáner) ---
         async function startCamera() {
             try {
                 if (state.cameraStream) {
@@ -566,23 +595,20 @@
             const ctx = canvas.getContext('2d');
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            // Efecto visual de flash
             video.style.opacity = '0';
             setTimeout(() => video.style.opacity = '1', 100);
 
-            // Convertir a JPEG para almacenar en memoria
             canvas.toBlob(blob => {
                 if (blob) {
                     state.scannedBlobs.push(blob);
                     state.scannedPreviews.push(URL.createObjectURL(blob));
-                    render(); // Re-renderizar para mostrar la miniatura
+                    render(); 
                 }
             }, 'image/jpeg', 0.9);
         }
 
-        // --- STREAMING_CHUNK: Event Listeners & Logic ---
+        // --- Event Listeners ---
         function attachListeners() {
-            // Theme Toggle
             const themeToggleBtn = document.getElementById('theme-toggle');
             if (themeToggleBtn) {
                 themeToggleBtn.addEventListener('click', () => {
@@ -593,14 +619,12 @@
                 });
             }
 
-            // Navigation
             const navLogo = document.getElementById('nav-logo');
             if (navLogo) navLogo.onclick = () => { stopCamera(); state.activeTool = null; resetWorkspace(); };
             
             const backBtn = document.getElementById('back-btn');
             if (backBtn) backBtn.onclick = () => { stopCamera(); state.activeTool = null; resetWorkspace(); };
 
-            // Modals
             document.getElementById('open-terms-btn')?.addEventListener('click', () => { state.isTermsModalOpen = true; render(); });
             document.getElementById('close-terms-btn')?.addEventListener('click', () => { state.isTermsModalOpen = false; render(); });
             document.getElementById('close-terms-x')?.addEventListener('click', () => { state.isTermsModalOpen = false; render(); });
@@ -614,17 +638,11 @@
                     card.onclick = () => {
                         const toolId = card.getAttribute('data-id');
                         state.activeTool = TOOLS.find(t => t.id === toolId);
-                        
-                        // Si la herramienta es el escáner, encendemos la cámara
-                        if (toolId === 'scan') {
-                            startCamera();
-                        }
+                        if (toolId === 'scan') startCamera();
                         render();
                     };
                 });
             } else {
-                
-                // --- LISTENERS DEL ESCÁNER ---
                 if (state.activeTool.id === 'scan') {
                     const captureBtn = document.getElementById('capture-btn');
                     if (captureBtn) captureBtn.onclick = takePhoto;
@@ -640,9 +658,7 @@
 
                     const processScanBtn = document.getElementById('process-btn');
                     if (processScanBtn) processScanBtn.onclick = processScanToPdf;
-                } 
-                // --- LISTENERS ESTÁNDAR ---
-                else {
+                } else {
                     const dropzone = document.getElementById('dropzone');
                     const fileInput = document.getElementById('file-input');
                     const selectFilesBtn = document.getElementById('select-files-btn');
@@ -686,7 +702,6 @@
                     });
                 }
 
-                // Listeners compartidos (post-proceso)
                 const resetBtn = document.getElementById('reset-btn');
                 const resetBtnErr = document.getElementById('reset-btn-err');
                 if (resetBtn) resetBtn.onclick = () => { stopCamera(); resetWorkspace(); };
@@ -694,10 +709,19 @@
                 
                 const formatSelect = document.getElementById('export-format');
                 if (formatSelect) formatSelect.onchange = (e) => { state.selectedExportFormat = e.target.value; };
+
+                const imgFormatSelect = document.getElementById('image-export-format');
+                if (imgFormatSelect) imgFormatSelect.onchange = (e) => { state.selectedImageFormat = e.target.value; };
+
+                const pageRangeInput = document.getElementById('page-range');
+                if (pageRangeInput) pageRangeInput.oninput = (e) => { state.splitRange = e.target.value; };
+                
+                const compressionInput = document.getElementById('compression-level');
+                if (compressionInput) compressionInput.oninput = (e) => { state.compressionLevel = e.target.value; };
             }
         }
 
-        // --- STREAMING_CHUNK: Helpers ---
+        // --- Helpers ---
         function handleFiles(newFiles) {
             let validFiles = Array.from(newFiles);
             if (state.activeTool.multiple) {
@@ -725,16 +749,14 @@
             state.downloadName = '';
             state.errorMessage = '';
             
-            // Si estábamos en el escáner y reiniciamos para "Hacer otra tarea", reiniciamos la cámara
             if (state.activeTool && state.activeTool.id === 'scan') {
                 startCamera();
             }
-            
             render();
         }
 
         function createDownload(data, filename, type) {
-            stopCamera(); // Detenemos cámara para ahorrar recursos al terminar
+            stopCamera();
             let blob = new Blob([data], { type: type });
             const url = URL.createObjectURL(blob);
             state.downloadUrl = url;
@@ -743,11 +765,57 @@
             render();
         }
 
-        // --- STREAMING_CHUNK: Procesamiento de Escaneo a PDF ---
+        // Helper: Parsear rangos (ej. "1,3,5-7" -> [1,3,5,6,7])
+        function parsePageRange(rangeStr, maxPages) {
+            if (!rangeStr.trim()) {
+                return Array.from({length: maxPages}, (_, i) => i + 1);
+            }
+            const pages = new Set();
+            const parts = rangeStr.split(',');
+            for (let part of parts) {
+                part = part.trim();
+                if (part.includes('-')) {
+                    const [start, end] = part.split('-').map(n => parseInt(n.trim()));
+                    if (!isNaN(start) && !isNaN(end)) {
+                        for (let i = start; i <= end; i++) pages.add(i);
+                    }
+                } else {
+                    const num = parseInt(part);
+                    if (!isNaN(num)) pages.add(num);
+                }
+            }
+            return Array.from(pages).filter(p => p >= 1 && p <= maxPages).sort((a, b) => a - b);
+        }
+
+        // --- Motor de Procesamiento General ---
+        async function processFiles() {
+            if (state.files.length === 0) return;
+            state.processingState = 'processing';
+            render();
+
+            try {
+                if (state.activeTool.id === 'merge') await processMerge();
+                else if (state.activeTool.id === 'split') await processSplit();
+                else if (state.activeTool.id === 'compress') await processCompress();
+                else if (state.activeTool.id === 'to-pdf') await processCreatePdf();
+                else if (state.activeTool.id === 'from-pdf') await processFromPdf();
+                else if (state.activeTool.id === 'remove-pages') await processRemovePages();
+                else if (state.activeTool.id === 'number-pages') await processNumberPages();
+                else if (state.activeTool.id === 'convert-webp') await processConvertWebp();
+            } catch (error) {
+                console.error(error);
+                state.errorMessage = 'Ocurrió un error al procesar el archivo. Revisa el formato y vuelve a intentar.';
+                state.processingState = 'error';
+                render();
+            }
+        }
+
+        // --- Lógica Individual de Herramientas ---
+
         async function processScanToPdf() {
             if (state.scannedBlobs.length === 0) return;
             state.processingState = 'processing';
-            stopCamera(); // Apagamos cámara durante el procesamiento pesado
+            stopCamera(); 
             render();
 
             try {
@@ -757,9 +825,6 @@
                 for (let blob of state.scannedBlobs) {
                     const arrayBuffer = await blob.arrayBuffer();
                     const image = await newPdf.embedJpg(arrayBuffer);
-                    
-                    // Escalar la imagen si es muy gigante para que no pese tanto el PDF final
-                    // Para documentos es mejor mantener una buena relación aspecto
                     const page = newPdf.addPage([image.width, image.height]);
                     page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
                 }
@@ -767,70 +832,62 @@
                 const pdfBytes = await newPdf.save();
                 createDownload(pdfBytes, 'Documento_Escaneado_ProyectPDF.pdf', 'application/pdf');
             } catch (error) {
-                console.error("Error al procesar el escaneo:", error);
+                console.error(error);
                 state.errorMessage = 'Ocurrió un error al intentar crear el PDF con las fotografías.';
                 state.processingState = 'error';
                 render();
             }
         }
 
-        // --- STREAMING_CHUNK: Core Processing Engine (Original Tools) ---
-        async function processFiles() {
-            if (state.files.length === 0) return;
-            state.processingState = 'processing';
-            render();
-
-            try {
-                if (state.activeTool.id === 'merge') await processMerge();
-                else if (state.activeTool.id === 'split') await processSplit();
-                else if (state.activeTool.id === 'to-pdf') await processCreatePdf();
-                // ... aquí irían las llamadas a los demás procesos ...
-                // Nota: Por simplificación para esta versión de prueba, he incluido los motores esenciales, 
-                // pero todos los demás (como comprimir y convertir desde PDF) pueden seguir igual.
-                else {
-                    setTimeout(() => { createDownload(new Blob(["Archivo demo"]), 'Demo.txt', 'text/plain'); }, 2000);
-                }
-            } catch (error) {
-                state.errorMessage = 'Ocurrió un error al procesar el archivo.';
-                state.processingState = 'error';
-                render();
-            }
-        }
-
         async function processMerge() {
-            const { PDFDocument, degrees } = window.PDFLib;
+            const { PDFDocument } = window.PDFLib;
             const mergedPdf = await PDFDocument.create();
 
             for (let i = 0; i < state.files.length; i++) {
                 const file = state.files[i];
+                const angle = state.fileRotations[i] || 0;
+
                 if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
                     const arrayBuffer = await file.arrayBuffer();
                     const pdf = await PDFDocument.load(arrayBuffer);
                     const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-                    copiedPages.forEach((page) => mergedPdf.addPage(page));
+                    copiedPages.forEach((page) => {
+                        if (angle !== 0) page.setRotation(window.PDFLib.degrees(angle));
+                        mergedPdf.addPage(page);
+                    });
+                } else if (file.type.startsWith('image/')) {
+                    // Si es imagen, la dibujamos en un canvas oculto para rotarla de forma segura y luego embedirla
+                    const isPng = file.type === 'image/png';
+                    const arrayBuffer = await new Promise((resolve) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            const ctx = canvas.getContext('2d');
+                            if (angle === 90 || angle === 270) {
+                                canvas.width = img.height; canvas.height = img.width;
+                            } else {
+                                canvas.width = img.width; canvas.height = img.height;
+                            }
+                            ctx.translate(canvas.width/2, canvas.height/2);
+                            ctx.rotate(angle * Math.PI / 180);
+                            ctx.drawImage(img, -img.width/2, -img.height/2);
+                            
+                            const mime = isPng ? 'image/png' : 'image/jpeg';
+                            canvas.toBlob(blob => blob.arrayBuffer().then(resolve), mime, 1.0);
+                        };
+                        img.src = URL.createObjectURL(file);
+                    });
+
+                    let image;
+                    if (isPng) image = await mergedPdf.embedPng(arrayBuffer);
+                    else image = await mergedPdf.embedJpg(arrayBuffer);
+                    
+                    const page = mergedPdf.addPage([image.width, image.height]);
+                    page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
                 }
             }
             const mergedPdfBytes = await mergedPdf.save();
             createDownload(mergedPdfBytes, 'Archivos_Unidos.pdf', 'application/pdf');
-        }
-
-        async function processCreatePdf() {
-            const { PDFDocument } = window.PDFLib;
-            const newPdf = await PDFDocument.create();
-            
-            for (let file of state.files) {
-                const ext = file.name.split('.').pop().toLowerCase();
-                if (['jpg', 'jpeg', 'png'].includes(ext)) {
-                    const arrayBuffer = await file.arrayBuffer();
-                    let image;
-                    if (ext === 'png') image = await newPdf.embedPng(arrayBuffer);
-                    else image = await newPdf.embedJpg(arrayBuffer);
-                    const page = newPdf.addPage([image.width, image.height]);
-                    page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
-                }
-            }
-            const pdfBytes = await newPdf.save();
-            createDownload(pdfBytes, 'Arvelo_Creado.pdf', 'application/pdf');
         }
 
         async function processSplit() {
@@ -839,13 +896,295 @@
             const arrayBuffer = await file.arrayBuffer();
             const originalPdf = await PDFDocument.load(arrayBuffer);
             const newPdf = await PDFDocument.create();
-            const [copiedPage] = await newPdf.copyPages(originalPdf, [0]);
-            newPdf.addPage(copiedPage);
+            
+            const totalPages = originalPdf.getPageCount();
+            const pagesToKeep = parsePageRange(state.splitRange, totalPages);
+            
+            // Los índices en pdf-lib empiezan en 0
+            const indicesToKeep = pagesToKeep.map(p => p - 1);
+            
+            const copiedPages = await newPdf.copyPages(originalPdf, indicesToKeep);
+            copiedPages.forEach(page => newPdf.addPage(page));
+            
             const bytes = await newPdf.save();
-            createDownload(bytes, `Primer_Pagina.pdf`, 'application/pdf');
+            createDownload(bytes, `Extraido_${file.name}`, 'application/pdf');
         }
 
-        // --- Init ---
+        async function processRemovePages() {
+            const { PDFDocument } = window.PDFLib;
+            const file = state.files[0];
+            const arrayBuffer = await file.arrayBuffer();
+            const originalPdf = await PDFDocument.load(arrayBuffer);
+            
+            const totalPages = originalPdf.getPageCount();
+            const pagesToRemove = parsePageRange(state.splitRange, totalPages);
+            
+            // Eliminar de atrás hacia adelante para no alterar los índices
+            const indicesToRemove = pagesToRemove.map(p => p - 1).sort((a,b) => b - a);
+            
+            indicesToRemove.forEach(index => {
+                if(index >= 0 && index < originalPdf.getPageCount()) {
+                    originalPdf.removePage(index);
+                }
+            });
+            
+            const bytes = await originalPdf.save();
+            createDownload(bytes, `Limpio_${file.name}`, 'application/pdf');
+        }
+
+        async function processNumberPages() {
+            const { PDFDocument, StandardFonts, rgb } = window.PDFLib;
+            const file = state.files[0];
+            const arrayBuffer = await file.arrayBuffer();
+            const pdfDoc = await PDFDocument.load(arrayBuffer);
+            
+            const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+            const pages = pdfDoc.getPages();
+            
+            pages.forEach((page, idx) => {
+                const { width, height } = page.getSize();
+                page.drawText(`${idx + 1}`, {
+                    x: width / 2,
+                    y: 20,
+                    size: 12,
+                    font: font,
+                    color: rgb(0, 0, 0),
+                });
+            });
+            
+            const bytes = await pdfDoc.save();
+            createDownload(bytes, `Numerado_${file.name}`, 'application/pdf');
+        }
+
+        async function processCompress() {
+            const { PDFDocument } = window.PDFLib;
+            const file = state.files[0];
+            const arrayBuffer = await file.arrayBuffer();
+            
+            const pdfjsDoc = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+            const newPdf = await PDFDocument.create();
+            
+            // Calculamos calidad JPEG basada en el slider (10 a 90)
+            const quality = parseInt(state.compressionLevel) / 100;
+            
+            for (let i = 1; i <= pdfjsDoc.numPages; i++) {
+                const page = await pdfjsDoc.getPage(i);
+                const viewport = page.getViewport({ scale: 1.5 }); // Escala reducida para comprimir
+                
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                
+                await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+                
+                const imgBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+                const imgBytes = await imgBlob.arrayBuffer();
+                
+                const image = await newPdf.embedJpg(imgBytes);
+                const newPage = newPdf.addPage([image.width, image.height]);
+                newPage.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
+            }
+            
+            const bytes = await newPdf.save();
+            createDownload(bytes, `Comprimido_${file.name}`, 'application/pdf');
+        }
+
+        async function processCreatePdf() {
+            const { PDFDocument, StandardFonts, rgb } = window.PDFLib;
+            const newPdf = await PDFDocument.create();
+
+            // Helper para dibujar texto con saltos de línea y sanitizado contra Emojis
+            const drawTextToPdf = async (rawText, pdf, rgb) => {
+                const font = await pdf.embedFont(StandardFonts.Helvetica);
+                const fontSize = 11;
+                let page = pdf.addPage();
+                let { width, height } = page.getSize();
+                let yPos = height - 50;
+                const margin = 50;
+                const maxWidth = width - (margin * 2);
+
+                const text = rawText.replace(/[^\x00-\xFF\u0152\u0153\u0178\u0192\u2013\u2014\u2018\u2019\u201A\u201C\u201D\u201E\u2020\u2021\u2022\u2026\u2030\u2039\u203A\u20AC]/g, "");
+
+                const lines = text.split('\n');
+                for (let line of lines) {
+                    let currentLine = '';
+                    const words = line.split(' ');
+                    for (let word of words) {
+                        const testLine = currentLine + word + ' ';
+                        let testWidth = 0;
+                        try { testWidth = font.widthOfTextAtSize(testLine, fontSize); } catch(e) { testWidth = maxWidth + 1; }
+                        
+                        if (testWidth > maxWidth && currentLine !== '') {
+                            if (yPos < 50) { page = pdf.addPage(); yPos = height - 50; }
+                            try { page.drawText(currentLine, { x: margin, y: yPos, size: fontSize, font: font, color: rgb(0,0,0) }); } catch(e) {}
+                            yPos -= 15;
+                            currentLine = word + ' ';
+                        } else {
+                            currentLine = testLine;
+                        }
+                    }
+                    if (currentLine.trim() !== '') {
+                        if (yPos < 50) { page = pdf.addPage(); yPos = height - 50; }
+                        try { page.drawText(currentLine, { x: margin, y: yPos, size: fontSize, font: font, color: rgb(0,0,0) }); } catch(e) {}
+                        yPos -= 15;
+                    }
+                }
+            };
+
+            for (let i = 0; i < state.files.length; i++) {
+                const file = state.files[i];
+                const angle = state.fileRotations[i] || 0;
+                const extension = file.name.split('.').pop().toLowerCase();
+
+                if (extension === 'txt') {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const text = new TextDecoder("utf-8").decode(arrayBuffer);
+                    await drawTextToPdf(text, newPdf, rgb);
+                } else if (extension === 'docx') {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+                    await drawTextToPdf(result.value || "El documento parece estar vacío.", newPdf, rgb);
+                } else if (extension === 'xlsx' || extension === 'xls') {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                    let text = "";
+                    workbook.SheetNames.forEach(sheetName => {
+                        text += `\n--- HOJA: ${sheetName} ---\n\n`;
+                        const roa = XLSX.utils.sheet_to_txt(workbook.Sheets[sheetName]);
+                        if (roa.length > 0) text += roa + "\n";
+                    });
+                    await drawTextToPdf(text, newPdf, rgb);
+                } else if (['jpg', 'jpeg', 'png'].includes(extension)) {
+                    const isPng = extension === 'png';
+                    const arrayBuffer = await new Promise((resolve) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            const ctx = canvas.getContext('2d');
+                            if (angle === 90 || angle === 270) {
+                                canvas.width = img.height; canvas.height = img.width;
+                            } else {
+                                canvas.width = img.width; canvas.height = img.height;
+                            }
+                            ctx.translate(canvas.width/2, canvas.height/2);
+                            ctx.rotate(angle * Math.PI / 180);
+                            ctx.drawImage(img, -img.width/2, -img.height/2);
+                            canvas.toBlob(blob => blob.arrayBuffer().then(resolve), isPng ? 'image/png' : 'image/jpeg', 1.0);
+                        };
+                        img.src = URL.createObjectURL(file);
+                    });
+
+                    let image = isPng ? await newPdf.embedPng(arrayBuffer) : await newPdf.embedJpg(arrayBuffer);
+                    const page = newPdf.addPage([image.width, image.height]);
+                    page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
+                }
+            }
+            const pdfBytes = await newPdf.save();
+            createDownload(pdfBytes, 'Arvelo_Creado.pdf', 'application/pdf');
+        }
+
+        async function processFromPdf() {
+            const format = state.selectedExportFormat;
+            const file = state.files[0];
+            const arrayBuffer = await file.arrayBuffer();
+            
+            const pdfjsLibObj = window['pdfjs-dist/build/pdf'] || window.pdfjsLib;
+            const pdfDoc = await pdfjsLibObj.getDocument({data: arrayBuffer}).promise;
+
+            if (format === 'jpg' || format === 'png') {
+                if (!window.JSZip) throw new Error("ZIP no disponible");
+                const zip = new JSZip();
+                const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
+                
+                for (let i = 1; i <= pdfDoc.numPages; i++) {
+                    const page = await pdfDoc.getPage(i);
+                    const viewport = page.getViewport({ scale: 2.0 }); 
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+                    await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+                    
+                    const blob = await new Promise(resolve => canvas.toBlob(resolve, mimeType, 1.0));
+                    const imgBytes = await blob.arrayBuffer();
+                    zip.file(`Pagina_${i}.${format}`, imgBytes);
+                }
+                
+                if (pdfDoc.numPages === 1) {
+                    const content = await zip.file(`Pagina_1.${format}`).async("blob");
+                    createDownload(content, `Extraido.${format}`, mimeType);
+                } else {
+                    const zipContent = await zip.generateAsync({type:"blob"});
+                    createDownload(zipContent, `Imagenes_Extraidas.zip`, 'application/zip');
+                }
+            } else {
+                let fullTextHtml = "";
+                let fullTextExcel = "";
+                
+                for (let i = 1; i <= pdfDoc.numPages; i++) {
+                    const page = await pdfDoc.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const textItems = textContent.items.map(item => item.str).join(' ');
+                    fullTextHtml += `<p>${textItems}</p>`;
+                    fullTextExcel += `<tr><td>Página ${i}</td><td>${textItems}</td></tr>`;
+                }
+
+                if (format === 'doc') {
+                    const content = `
+                        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+                        <head><meta charset="utf-8"><title>Documento</title></head>
+                        <body><h1>Extraído de: ${file.name}</h1><hr>${fullTextHtml}</body></html>
+                    `;
+                    createDownload(content, `Extraido.doc`, 'application/msword');
+                } else if (format === 'xls') {
+                    const content = `
+                        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+                        <head><meta charset="utf-8"></head>
+                        <body><table border="1"><tr><th colspan="2" style="background-color:#4CAF50;color:white;">Contenido de: ${file.name}</th></tr>${fullTextExcel}</table></body></html>
+                    `;
+                    createDownload(content, `Extraido.xls`, 'application/vnd.ms-excel');
+                }
+            }
+        }
+
+        async function processConvertWebp() {
+            const format = state.selectedImageFormat; // jpg, jpeg o png
+            const file = state.files[0];
+            
+            const objectUrl = URL.createObjectURL(file);
+            const img = new Image();
+            
+            await new Promise((resolve, reject) => {
+                img.onload = resolve;
+                img.onerror = reject;
+                img.src = objectUrl;
+            });
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            
+            if (format === 'jpg' || format === 'jpeg') {
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+            
+            ctx.drawImage(img, 0, 0);
+            
+            const mimeType = (format === 'png') ? 'image/png' : 'image/jpeg';
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, mimeType, 1.0));
+            const arrayBuffer = await blob.arrayBuffer();
+            
+            URL.revokeObjectURL(objectUrl);
+            
+            const originalName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+            const newName = `${originalName}_convertido.${format}`;
+            createDownload(arrayBuffer, newName, mimeType);
+        }
+
+        // --- Inicialización ---
         document.addEventListener('DOMContentLoaded', render);
     </script>
 </body>
