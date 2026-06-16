@@ -3,15 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Etiqueta Canonical para Google Search Console (REEMPLAZAR CON TU URL REAL) -->
-    <link rel="canonical" href="https://[TU-USUARIO].github.io/[TU-REPOSITORIO]/" />
+    <!-- Etiqueta Canonical para Google Search Console -->
+    <link rel="canonical" href="https://jesusarvelo-afk.github.io/maestropdf/" />
     
     <title>Proyect PDF</title>
     
-    <!-- Ícono de la pestaña del navegador -->
     <link rel="icon" href="favicon.png" type="image/png">
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -26,28 +24,14 @@
         }
     </script>
     
-    <!-- PDF-Lib para procesamiento de PDFs (Unir, Crear, Dividir, Numerar) -->
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-    
-    <!-- PDF.js para renderizado (Compresión) y extracción a imágenes -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     </script>
-
-    <!-- JSZip para empaquetar en ZIP -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    
-    <!-- Mammoth para leer DOCX (AQUÍ ESTÁ LA MAGIA PARA EXTRAER IMÁGENES Y TEXTO) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
-    
-    <!-- SheetJS para leer XLSX y XLS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-
-    <!-- Fuente Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
@@ -59,32 +43,11 @@
             transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
         }
 
-        /* Ocultar elementos al imprimir (Solución para guardar Word como PDF) */
         @media print {
             .no-print { display: none !important; }
             body { background-color: white !important; }
-            #print-container { 
-                padding: 0 !important; 
-                margin: 0 !important; 
-                box-shadow: none !important;
-                max-width: 100% !important;
-            }
-            @page {
-                margin: 2cm;
-            }
+            @page { margin: 2cm; }
         }
-        
-        /* Estilos para el renderizado del Word */
-        #print-container img {
-            max-width: 100%;
-            height: auto;
-            display: block;
-            margin: 15px 0;
-        }
-        #print-container p { margin-bottom: 1em; }
-        #print-container h1, #print-container h2, #print-container h3 { margin-top: 1.5em; margin-bottom: 0.5em; font-weight: bold; }
-        #print-container table { width: 100%; border-collapse: collapse; margin-bottom: 1em; }
-        #print-container td, #print-container th { border: 1px solid #000; padding: 5px; }
     </style>
 </head>
 <body class="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col font-sans text-slate-900 dark:text-slate-100 selection:bg-blue-200 dark:selection:bg-blue-900 transition-colors duration-300">
@@ -92,7 +55,6 @@
     <div id="app" class="flex flex-col flex-grow w-full"></div>
 
     <script>
-        // --- STREAMING_CHUNK: Initializing System State ---
         if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
         } else {
@@ -133,7 +95,7 @@
             {
                 id: 'to-pdf',
                 title: 'Crear PDF',
-                description: 'Crea archivos PDF a partir de textos (.txt), Word, Excel o imágenes.',
+                description: 'Crea archivos PDF a partir de textos (.txt), Word, Excel o imágenes.<br><span class="text-xs font-semibold text-amber-600 dark:text-amber-500 mt-2 block">* Convertir Word requiere conexión a internet para mantener su formato original.</span>',
                 icon: 'file-plus-2',
                 iconColor: 'text-purple-500 dark:text-purple-400',
                 color: 'hover:border-purple-500 dark:hover:border-purple-400 hover:shadow-purple-100 dark:hover:shadow-purple-900/20',
@@ -213,7 +175,6 @@
             scannedPreviews: []
         };
 
-        // --- STREAMING_CHUNK: Rendering User Interface ---
         function render() {
             const app = document.getElementById('app');
             const isDark = document.documentElement.classList.contains('dark');
@@ -222,7 +183,8 @@
             html += `
                 <nav class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10 shadow-sm transition-colors duration-300 no-print">
                     <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-                        <div class="flex items-center gap-2 cursor-pointer" id="nav-logo">
+                        <div class="flex items-center gap-2 cursor-pointer group" id="nav-logo">
+                            <i data-lucide="file-text" class="w-6 h-6 text-blue-600 dark:text-blue-500 group-hover:scale-110 transition-transform"></i>
                             <span class="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Proyect PDF</span>
                         </div>
                         
@@ -293,7 +255,6 @@
             }
         }
 
-        // --- STREAMING_CHUNK: Components Rendering ---
         function renderHome() {
             let cardsHtml = TOOLS.map(tool => `
                 <div data-id="${tool.id}" class="tool-card flex flex-col h-full bg-white dark:bg-slate-800 p-6 rounded-2xl border-2 border-slate-100 dark:border-slate-700 cursor-pointer transition-all duration-200 shadow-sm hover:-translate-y-1 ${tool.color}">
@@ -481,7 +442,7 @@
                     <div class="p-20 text-center flex flex-col items-center justify-center">
                         <i data-lucide="loader-2" class="w-16 h-16 text-blue-600 dark:text-blue-500 animate-spin-slow mb-6"></i>
                         <h3 class="text-2xl font-bold text-slate-800 dark:text-white mb-2 transition-colors">Procesando tus archivos...</h3>
-                        <p class="text-slate-500 dark:text-slate-400 transition-colors">Esto puede tomar unos segundos, por favor no cierres la ventana.</p>
+                        <p class="text-slate-500 dark:text-slate-400 transition-colors">Esto puede tomar unos segundos, por favor no cierres la ventana ni recargues.</p>
                     </div>
                 `;
             } else if (state.processingState === 'done') {
@@ -536,7 +497,6 @@
             `;
         }
 
-        // --- STREAMING_CHUNK: Modals with EXACT User Provided Terms ---
         function renderTermsModal() {
             return `<div id="terms-modal-overlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-100 transition-opacity no-print">
                     <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-700">
@@ -585,7 +545,6 @@ Estos términos y condiciones se rigen e interpretan de acuerdo con las leyes de
                 </div>`;
         }
 
-        // --- STREAMING_CHUNK: Camera Setup ---
         async function startCamera() {
             try {
                 if (state.cameraStream) {
@@ -638,7 +597,6 @@ Estos términos y condiciones se rigen e interpretan de acuerdo con las leyes de
             }, 'image/jpeg', 0.9);
         }
 
-        // --- STREAMING_CHUNK: Event Listeners ---
         function attachListeners() {
             const themeToggleBtn = document.getElementById('theme-toggle');
             if (themeToggleBtn) {
@@ -752,7 +710,6 @@ Estos términos y condiciones se rigen e interpretan de acuerdo con las leyes de
             }
         }
 
-        // --- STREAMING_CHUNK: Base Helper Functions ---
         function handleFiles(newFiles) {
             let validFiles = Array.from(newFiles);
             if (state.activeTool.multiple) {
@@ -817,7 +774,6 @@ Estos términos y condiciones se rigen e interpretan de acuerdo con las leyes de
             return Array.from(pages).filter(p => p >= 1 && p <= maxPages).sort((a, b) => a - b);
         }
 
-        // --- STREAMING_CHUNK: Processing Engine Execution ---
         async function processFiles() {
             if (state.files.length === 0) return;
             state.processingState = 'processing';
@@ -840,7 +796,6 @@ Estos términos y condiciones se rigen e interpretan de acuerdo con las leyes de
             }
         }
 
-        // --- STREAMING_CHUNK: Tool Specific Implementations ---
         async function processScanToPdf() {
             if (state.scannedBlobs.length === 0) return;
             state.processingState = 'processing';
@@ -994,7 +949,7 @@ Estos términos y condiciones se rigen e interpretan de acuerdo con las leyes de
             
             for (let i = 1; i <= pdfjsDoc.numPages; i++) {
                 const page = await pdfjsDoc.getPage(i);
-                const viewport = page.getViewport({ scale: 1.5 });
+                const viewport = page.getViewport({ scale: 1.5 }); 
                 
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
@@ -1015,95 +970,13 @@ Estos términos y condiciones se rigen e interpretan de acuerdo con las leyes de
             createDownload(bytes, `Comprimido_ProyectPDF_${file.name}`, 'application/pdf');
         }
 
-        // --- STREAMING_CHUNK: Word to PDF (Mammoth with Base64 Images) ---
         async function processCreatePdf() {
             const { PDFDocument, StandardFonts, rgb } = window.PDFLib;
             const newPdf = await PDFDocument.create();
-
-            // Verificar si hay un archivo de Word (.docx)
-            const docxFile = state.files.find(f => f.name.toLowerCase().endsWith('.docx'));
             
-            if (docxFile) {
-                // LÓGICA DE RENDERIZADO FIEL DE WORD A PDF (CON IMÁGENES BASE64)
-                const arrayBuffer = await docxFile.arrayBuffer();
-                
-                // Ocultar la UI normal de la aplicación
-                document.getElementById('app').style.display = 'none';
-                
-                // Crear un contenedor de impresión de página que simula una hoja A4/Carta
-                const printContainer = document.createElement('div');
-                printContainer.id = 'print-container';
-                printContainer.style.backgroundColor = 'white';
-                printContainer.style.color = 'black';
-                printContainer.style.padding = '2cm 2.5cm';
-                printContainer.style.minHeight = '29.7cm'; // Tamaño A4 aprox
-                printContainer.style.maxWidth = '21cm';
-                printContainer.style.margin = '0 auto';
-                printContainer.style.fontFamily = 'Arial, sans-serif';
-                printContainer.style.lineHeight = '1.6';
-                printContainer.style.boxShadow = '0 0 10px rgba(0,0,0,0.1)';
-                document.body.appendChild(printContainer);
+            // LA URL REAL DE GOOGLE SCRIPT
+            const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxQgt-x4EMR7-L0S9BB8XPzBoWREfJY1XG-DlOz-9DD5Mz7BUEXMcfrYJDW9pMY8Njn/exec";
 
-                try {
-                    // Configurar Mammoth para forzar la extracción de imágenes a Base64
-                    const options = {
-                        convertImage: mammoth.images.imgElement(function(image) {
-                            return image.read("base64").then(function(imageBuffer) {
-                                return {
-                                    src: "data:" + image.contentType + ";base64," + imageBuffer
-                                };
-                            });
-                        }),
-                        styleMap: [
-                            "p[style-name='Heading 1'] => h1:fresh",
-                            "p[style-name='Heading 2'] => h2:fresh",
-                            "p[style-name='Heading 3'] => h3:fresh",
-                            "b => strong",
-                            "i => em",
-                            "u => u",
-                            "strike => s"
-                        ]
-                    };
-
-                    // Extraer HTML manteniendo el formato y las imágenes incrustadas
-                    const result = await mammoth.convertToHtml({arrayBuffer: arrayBuffer}, options);
-                    
-                    // Inyectar el resultado exacto en el contenedor
-                    printContainer.innerHTML = result.value;
-
-                    // Añadir un botón flotante para Imprimir/Guardar como PDF nativo
-                    const printBtn = document.createElement('button');
-                    printBtn.innerHTML = '<i data-lucide="printer" class="w-5 h-5 mr-2"></i> Guardar como PDF Original';
-                    printBtn.className = 'fixed top-6 right-6 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold shadow-2xl no-print z-50 flex items-center transition-colors';
-                    
-                    printBtn.onclick = () => {
-                        window.print(); // Abre el diálogo nativo, que respeta imágenes y márgenes CSS
-                        
-                        // Limpiar y restaurar la aplicación después de imprimir
-                        document.body.removeChild(printBtn);
-                        document.body.removeChild(printContainer);
-                        document.getElementById('app').style.display = 'flex';
-                        
-                        state.processingState = 'done';
-                        state.downloadName = 'Documento_Procesado';
-                        state.downloadUrl = '#'; 
-                        render();
-                    };
-                    document.body.appendChild(printBtn);
-                    lucide.createIcons();
-
-                } catch (e) {
-                    console.error("Error al renderizar Word", e);
-                    document.body.removeChild(printContainer);
-                    document.getElementById('app').style.display = 'flex';
-                    state.errorMessage = 'No se pudo leer el documento de Word. Asegúrate de que no esté dañado.';
-                    state.processingState = 'error';
-                    render();
-                }
-                return; // Cortar ejecución normal para respetar el flujo de impresión
-            }
-
-            // LÓGICA ESTÁNDAR PARA TXT, EXCEL E IMÁGENES (Sin cambios)
             const drawTextToPdf = async (rawText, pdf, rgb) => {
                 const font = await pdf.embedFont(StandardFonts.Helvetica);
                 const fontSize = 11;
@@ -1112,6 +985,7 @@ Estos términos y condiciones se rigen e interpretan de acuerdo con las leyes de
                 let yPos = height - 50;
                 const margin = 50;
                 const maxWidth = width - (margin * 2);
+
                 const text = rawText.replace(/[^\x00-\xFF\u0152\u0153\u0178\u0192\u2013\u2014\u2018\u2019\u201A\u201C\u201D\u201E\u2020\u2021\u2022\u2026\u2030\u2039\u203A\u20AC]/g, "");
 
                 const lines = text.split('\n');
@@ -1149,6 +1023,34 @@ Estos términos y condiciones se rigen e interpretan de acuerdo con las leyes de
                     const arrayBuffer = await file.arrayBuffer();
                     const text = new TextDecoder("utf-8").decode(arrayBuffer);
                     await drawTextToPdf(text, newPdf, rgb);
+                    
+                } else if (extension === 'docx') {
+                    
+                    const base64 = await new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result.split(',')[1]);
+                        reader.readAsDataURL(file);
+                    });
+                    
+                    const response = await fetch(GOOGLE_SCRIPT_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({
+                            fileName: file.name,
+                            fileBase64: base64
+                        })
+                    });
+                    
+                    const result = await response.json();
+                    if (result.success) {
+                        const pdfBytes = Uint8Array.from(atob(result.pdfBase64), c => c.charCodeAt(0));
+                        const loadedPdf = await PDFDocument.load(pdfBytes);
+                        const copiedPages = await newPdf.copyPages(loadedPdf, loadedPdf.getPageIndices());
+                        copiedPages.forEach(page => newPdf.addPage(page));
+                    } else {
+                        throw new Error("Error en el servidor de conversión: " + result.error);
+                    }
+                    
                 } else if (extension === 'xlsx' || extension === 'xls') {
                     const arrayBuffer = await file.arrayBuffer();
                     const workbook = XLSX.read(arrayBuffer, { type: 'array' });
@@ -1159,6 +1061,7 @@ Estos términos y condiciones se rigen e interpretan de acuerdo con las leyes de
                         if (roa.length > 0) text += roa + "\n";
                     });
                     await drawTextToPdf(text, newPdf, rgb);
+                    
                 } else if (['jpg', 'jpeg', 'png'].includes(extension)) {
                     const isPng = extension === 'png';
                     const arrayBuffer = await new Promise((resolve) => {
@@ -1184,8 +1087,9 @@ Estos términos y condiciones se rigen e interpretan de acuerdo con las leyes de
                     page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
                 }
             }
-            const pdfBytes = await newPdf.save();
-            createDownload(pdfBytes, 'Documento_Creado_ProyectPDF.pdf', 'application/pdf');
+            
+            const finalPdfBytes = await newPdf.save();
+            createDownload(finalPdfBytes, 'Documento_Creado_ProyectPDF.pdf', 'application/pdf');
         }
 
         async function processFromPdf() {
@@ -1288,7 +1192,6 @@ Estos términos y condiciones se rigen e interpretan de acuerdo con las leyes de
             createDownload(arrayBuffer, newName, mimeType);
         }
 
-        // --- Init ---
         document.addEventListener('DOMContentLoaded', render);
     </script>
 </body>
