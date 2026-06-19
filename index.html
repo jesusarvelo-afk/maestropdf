@@ -6,6 +6,7 @@
     <title>Proyect PDF - Herramientas gratuitas para PDFs</title>
     <link rel="canonical" href="https://jesusarvelo-afk.github.io/maestropdf/">
     
+    <!-- Librerías -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -34,9 +35,17 @@
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 min-h-screen font-sans text-slate-900 dark:text-slate-100 flex flex-col selection:bg-blue-200 dark:selection:bg-blue-900 transition-colors duration-300">
 
+    <!-- MENSAJE EMERGENTE (TOAST) -->
+    <div id="custom-toast" class="fixed top-10 left-1/2 transform -translate-x-1/2 bg-slate-900 dark:bg-slate-800 text-white border border-slate-700 px-6 py-3 rounded-full shadow-2xl z-[100] hidden flex items-center gap-3 transition-opacity">
+        <i class="fas fa-info-circle text-blue-400"></i>
+        <span id="custom-toast-msg" class="font-medium"></span>
+    </div>
+
+    <!-- NAVEGACIÓN -->
     <nav class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-10 shadow-sm flex-none transition-colors duration-300">
         <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
             <div class="flex items-center gap-2 cursor-pointer" onclick="showHome()">
+                <!-- Icono Restaurado -->
                 <img src="favicon.png" alt="Proyect PDF Logo" class="h-8 w-8 rounded mr-2">
                 <span class="text-xl font-bold tracking-tight text-blue-600 dark:text-blue-400">Proyect PDF</span>
             </div>
@@ -45,10 +54,12 @@
                     <i class="fas fa-arrow-left"></i> <span class="hidden sm:inline">Inicio</span>
                 </button>
                 
+                <!-- Botón Donar Ko-fi -->
                 <a href="https://ko-fi.com/jesusarvelo" target="_blank" class="bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-bold py-2 px-4 rounded-lg shadow-sm transition flex items-center gap-2 text-sm ml-2">
                     <i class="fas fa-hand-holding-heart"></i> <span class="hidden sm:inline">Donar</span>
                 </a>
 
+                <!-- Botón Modo Oscuro -->
                 <button onclick="toggleDarkMode()" class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors" title="Cambiar tema">
                     <i id="theme-icon" class="fas fa-moon text-lg"></i>
                 </button>
@@ -56,10 +67,13 @@
         </div>
     </nav>
 
+    <!-- CONTENIDO PRINCIPAL -->
     <main class="flex-grow">
         
+        <!-- PANTALLA DE INICIO (HOME) -->
         <div id="home-view" class="max-w-7xl mx-auto px-4 py-12 block">
-            <div class="text-center mb-16">
+            
+            <div class="text-center mb-10">
                 <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-4 transition-colors">
                     Proyect <span class="text-blue-600 dark:text-blue-400">PDF</span>
                 </h1>
@@ -69,18 +83,24 @@
                 </p>
             </div>
 
+            <!-- AVISO DE SEGURIDAD (TEXTO VERDE FLUORESCENTE SIN MOVIMIENTO) -->
+            <p class="text-center font-bold mb-12 flex items-center justify-center gap-2 text-[#00c800] dark:text-[#39FF14]" style="text-shadow: 0 0 10px rgba(57, 255, 20, 0.4); font-size: 1.1rem;">
+                <i class="fas fa-shield-alt text-xl"></i> Tus archivos se procesan localmente. Nada queda en servidores.
+            </p>
+
+            <!-- Grid de Herramientas (Las 9 herramientas exactas) -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 
                 <div onclick="showTool('escanear')" class="bg-white dark:bg-slate-800 p-6 rounded-2xl border-2 border-slate-100 dark:border-slate-700 cursor-pointer transition-all duration-200 shadow-sm hover:-translate-y-1 hover:border-red-500 dark:hover:border-red-500">
                     <div class="bg-slate-50 dark:bg-slate-700 w-16 h-16 rounded-xl flex items-center justify-center mb-4"><i class="fas fa-camera text-3xl text-red-500"></i></div>
                     <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2">Escanear Documento</h3>
-                    <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">Usa la cámara de tu teléfono o sube imágenes JPG/PNG para crear tu PDF en formato oficial.</p>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">Usa la cámara de tu teléfono o sube imágenes JPG/PNG para crear tu PDF.</p>
                 </div>
 
                 <div onclick="showTool('unir')" class="bg-white dark:bg-slate-800 p-6 rounded-2xl border-2 border-slate-100 dark:border-slate-700 cursor-pointer transition-all duration-200 shadow-sm hover:-translate-y-1 hover:border-blue-500 dark:hover:border-blue-500">
                     <div class="bg-slate-50 dark:bg-slate-700 w-16 h-16 rounded-xl flex items-center justify-center mb-4"><i class="fas fa-layer-group text-3xl text-blue-500"></i></div>
                     <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2">Unir PDF</h3>
-                    <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">Une varios archivos (PDF o Imágenes) en un solo documento de forma rápida.</p>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">Une varios archivos (PDF o Imágenes) ordenándolos a tu gusto.</p>
                 </div>
 
                 <div onclick="showTool('dividir')" class="bg-white dark:bg-slate-800 p-6 rounded-2xl border-2 border-slate-100 dark:border-slate-700 cursor-pointer transition-all duration-200 shadow-sm hover:-translate-y-1 hover:border-orange-500 dark:hover:border-orange-500">
@@ -100,13 +120,13 @@
                         <i class="fas fa-file-pdf text-3xl text-purple-600 dark:text-purple-400"></i>
                     </div>
                     <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2">Convertir a PDF</h3>
-                    <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">Convierte documentos Word e Imágenes JPG/PNG a PDF y ajusta su tamaño.</p>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">Convierte documentos Word e Imágenes JPG/PNG a PDF.</p>
                 </div>
 
                 <div onclick="showTool('webp')" class="bg-white dark:bg-slate-800 p-6 rounded-2xl border-2 border-slate-100 dark:border-slate-700 cursor-pointer transition-all duration-200 shadow-sm hover:-translate-y-1 hover:border-pink-500 dark:hover:border-pink-500">
                     <div class="bg-slate-50 dark:bg-slate-700 w-16 h-16 rounded-xl flex items-center justify-center mb-4"><i class="fas fa-file-image text-3xl text-pink-500"></i></div>
                     <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2">Convertir Imagen</h3>
-                    <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">Transforma archivos WEBP y otras imágenes a formato JPG o PNG al instante.</p>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">Transforma archivos WEBP y otras imágenes a formato JPG o PNG.</p>
                 </div>
 
                 <div onclick="showTool('numerar')" class="bg-white dark:bg-slate-800 p-6 rounded-2xl border-2 border-slate-100 dark:border-slate-700 cursor-pointer transition-all duration-200 shadow-sm hover:-translate-y-1 hover:border-teal-500 dark:hover:border-teal-500">
@@ -115,9 +135,22 @@
                     <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">Añade números de página a tu documento PDF automáticamente.</p>
                 </div>
 
+                <div onclick="showTool('eliminar')" class="bg-white dark:bg-slate-800 p-6 rounded-2xl border-2 border-slate-100 dark:border-slate-700 cursor-pointer transition-all duration-200 shadow-sm hover:-translate-y-1 hover:border-red-600 dark:hover:border-red-600">
+                    <div class="bg-slate-50 dark:bg-slate-700 w-16 h-16 rounded-xl flex items-center justify-center mb-4"><i class="fas fa-trash text-3xl text-red-700"></i></div>
+                    <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2">Eliminar Páginas</h3>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">Quita las hojas que no necesites de tu documento PDF.</p>
+                </div>
+
+                <div onclick="showTool('pdfword')" class="bg-white dark:bg-slate-800 p-6 rounded-2xl border-2 border-slate-100 dark:border-slate-700 cursor-pointer transition-all duration-200 shadow-sm hover:-translate-y-1 hover:border-blue-700 dark:hover:border-blue-700">
+                    <div class="bg-slate-50 dark:bg-slate-700 w-16 h-16 rounded-xl flex items-center justify-center mb-4"><i class="fas fa-file-word text-3xl text-blue-700"></i></div>
+                    <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2">PDF a Word</h3>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">Transforma tus archivos PDF a formato editable Word (.docx).</p>
+                </div>
+
             </div>
         </div>
 
+        <!-- PANTALLA DE HERRAMIENTA ESPECÍFICA -->
         <div id="tool-view" class="max-w-4xl mx-auto px-4 py-12 hidden">
             <div class="text-center mb-10">
                 <div id="tool-icon-container" class="flex justify-center items-center gap-3 mb-4 text-4xl"></div>
@@ -127,6 +160,7 @@
 
             <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden transition-colors">
                 
+                <!-- SECCIÓN ESCANEAR -->
                 <div id="escanear-section" class="tool-section hidden p-8">
                     <div id="drop-zone-img" class="drop-zone border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 rounded-xl p-10 text-center cursor-pointer hover:border-slate-400 dark:hover:border-slate-500">
                         <div class="flex flex-col sm:flex-row justify-center items-center gap-4 mb-4">
@@ -158,6 +192,7 @@
                     </div>
                 </div>
 
+                <!-- SECCIÓN UNIR PDF -->
                 <div id="unir-section" class="tool-section hidden p-8">
                     <div id="drop-zone-unir" class="drop-zone border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 rounded-xl p-10 text-center cursor-pointer hover:border-slate-400 dark:hover:border-slate-500" onclick="document.getElementById('file-input-unir').click()">
                         <div class="text-slate-400 dark:text-slate-500 text-5xl mb-4"><i class="fas fa-layer-group"></i></div>
@@ -189,6 +224,7 @@
                     </div>
                 </div>
 
+                <!-- SECCIÓN CONVERTIR A PDF (WORD + IMAGEN INTEGRADO) -->
                 <div id="office-section" class="tool-section hidden p-8">
                     <div class="bg-purple-50 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 text-sm p-4 rounded-xl mb-6 flex items-start border border-purple-100 dark:border-purple-800">
                         <i class="fas fa-info-circle mt-1 mr-2 text-purple-600 dark:text-purple-400 text-lg"></i>
@@ -212,9 +248,8 @@
                     </div>
                     
                     <div id="action-bar-office" class="mt-8 text-center hidden pt-6 border-t border-slate-100 dark:border-slate-700">
-                        
                         <div id="office-format-container" class="mb-6 hidden flex-col sm:flex-row justify-center items-center gap-3 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-                            <label class="font-bold text-slate-700 dark:text-slate-300">Tamaño de la página:</label>
+                            <label class="font-bold text-slate-700 dark:text-slate-300">Tamaño de la página (para imágenes):</label>
                             <select id="page-size-office" class="border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-white rounded-lg p-2 font-medium outline-none focus:border-blue-500">
                                 <option value="a4">A4 (210 x 297 mm)</option>
                                 <option value="letter">Carta / Letter (8.5 x 11")</option>
@@ -230,6 +265,7 @@
                     </div>
                 </div>
 
+                <!-- SECCIÓN WEBP A JPG/PNG -->
                 <div id="webp-section" class="tool-section hidden p-8">
                     <div id="drop-zone-webp" class="drop-zone border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 rounded-xl p-10 text-center cursor-pointer hover:border-slate-400 dark:hover:border-slate-500" onclick="document.getElementById('file-input-webp').click()">
                         <div class="text-slate-400 dark:text-slate-500 text-5xl mb-4"><i class="fas fa-file-image"></i></div>
@@ -258,11 +294,12 @@
                     </div>
                 </div>
 
+                <!-- SECCIÓN GENÉRICA (Dividir, Comprimir, Numerar, Eliminar Pág, PDF a Word) -->
                 <div id="generic-section" class="tool-section hidden p-8 text-center">
                     <div class="border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 rounded-xl p-12 text-center">
                         <div class="text-slate-400 dark:text-slate-500 text-5xl mb-4"><i class="fas fa-file-pdf"></i></div>
                         <h3 class="text-xl font-bold text-slate-700 dark:text-white mb-2">Selecciona tu documento</h3>
-                        <p class="text-slate-500 dark:text-slate-400 mb-6">Sube los archivos PDF para comenzar con esta herramienta.</p>
+                        <p class="text-slate-500 dark:text-slate-400 mb-6">Sube el archivo PDF para comenzar con esta herramienta.</p>
                         <button onclick="document.getElementById('file-input-generic').click()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-8 rounded-xl shadow-sm transition">
                             Seleccionar Archivos
                         </button>
@@ -278,17 +315,10 @@
         </div>
     </main>
 
-    <section class="max-w-4xl mx-auto px-4 py-12 text-center border-t border-slate-200 dark:border-slate-800">
-        <h3 class="text-2xl font-bold text-slate-800 dark:text-white mb-2">Mantente al día</h3>
-        <p class="text-slate-500 dark:text-slate-400 mb-6">Suscríbete a nuestro boletín para recibir notificaciones de nuevas herramientas y actualizaciones.</p>
-        <form onsubmit="handleSubscribe(event)" class="flex flex-col sm:flex-row justify-center gap-3 max-w-lg mx-auto">
-            <input type="email" id="sub-email" placeholder="Tu correo electrónico" required class="flex-grow border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white p-3 rounded-xl outline-none focus:border-blue-500 dark:focus:border-blue-400 transition-colors">
-            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-colors shadow-md">Suscribirse</button>
-        </form>
-    </section>
-
+    <!-- PIE DE PÁGINA (ESTRUCTURA RESTAURADA COMPLETAMENTE) -->
     <footer class="text-center py-6 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex-none transition-colors">
         <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4 text-slate-500 dark:text-slate-400 text-sm">
+            
             <div class="text-left md:w-1/3">
                 <p class="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide flex items-center gap-2 justify-center md:justify-start">
                     Desarrollado por Jesús Arvelo &amp; G-AI
@@ -296,24 +326,21 @@
                 </p>
                 <p class="text-xs mt-1 font-semibold text-slate-400 dark:text-slate-500 tracking-widest">TODOS LOS DERECHOS RESERVADOS &copy; 2026</p>
             </div>
+            
             <div class="text-center md:w-1/3">
                 <p class="font-bold text-lg text-slate-800 dark:text-slate-200 mb-1">Proyect PDF <span class="text-blue-600 dark:text-blue-400">(V 2.0)</span></p>
             </div>
+            
             <div class="text-right md:w-1/3">
                 <button onclick="document.getElementById('legal-modal').classList.remove('hidden')" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors font-bold underline underline-offset-4 cursor-pointer">
                     Términos y Condiciones
                 </button>
             </div>
+
         </div>
     </footer>
 
-    <button onclick="document.getElementById('contact-modal').classList.remove('hidden')" class="fixed bottom-6 right-6 bg-slate-900 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-500 text-white p-4 rounded-full shadow-lg transition-all duration-300 z-40 group flex items-center gap-2">
-        <i class="fas fa-comment-dots text-xl"></i>
-        <span class="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-300 ease-in-out font-medium">
-            &nbsp;Sugerencias
-        </span>
-    </button>
-
+    <!-- CONTENEDOR DE CÁMARA -->
     <div id="camera-container">
         <video id="video-element" autoplay playsinline></video>
         <div class="camera-controls">
@@ -325,20 +352,7 @@
         </div>
     </div>
 
-    <div id="contact-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl max-w-md w-full overflow-hidden transition-colors">
-            <div class="flex justify-between items-center p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
-                <h3 class="text-xl font-bold text-slate-800 dark:text-white"><i class="fas fa-comment-dots text-blue-600 dark:text-blue-400 mr-2"></i>Buzón de Sugerencias</h3>
-                <button onclick="document.getElementById('contact-modal').classList.add('hidden')" class="text-slate-400 hover:text-slate-700 dark:hover:text-white"><i class="fas fa-times text-xl"></i></button>
-            </div>
-            <div class="p-6">
-                <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">¿Encontraste un error o tienes una idea genial? Escríbela aquí.</p>
-                <textarea id="contact-msg" placeholder="Escribe tu mensaje..." class="w-full border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-xl p-3 focus:border-blue-500 outline-none min-h-[120px] resize-none mb-4"></textarea>
-                <button onclick="submitContact()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition">Enviar Mensaje</button>
-            </div>
-        </div>
-    </div>
-
+    <!-- MODAL DE TÉRMINOS Y CONDICIONES EXACTOS -->
     <div id="legal-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
         <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl max-w-3xl w-full flex flex-col max-h-[85vh] transition-colors">
             <div class="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 flex justify-between items-center rounded-t-3xl">
@@ -359,15 +373,24 @@
         </div>
     </div>
 
+    <!-- JAVASCRIPT LÓGICO COMPLETO -->
     <script>
-        // MODO OSCURO Y SUSCRIPCIÓN
+        
+        // FUNCIÓN REEMPLAZO DE ALERT (PARA NO ROMPER LA UI NATIVA)
+        function mostrarAviso(mensaje) {
+            const toast = document.getElementById('custom-toast');
+            document.getElementById('custom-toast-msg').innerText = mensaje;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 3500);
+        }
+
+        // MODO OSCURO
         function toggleDarkMode() {
             const html = document.documentElement; const icon = document.getElementById('theme-icon');
             if (html.classList.contains('dark')) { html.classList.remove('dark'); localStorage.setItem('theme', 'light'); icon.classList.remove('fa-sun'); icon.classList.add('fa-moon'); } 
             else { html.classList.add('dark'); localStorage.setItem('theme', 'dark'); icon.classList.remove('fa-moon'); icon.classList.add('fa-sun'); }
         }
         if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) { document.documentElement.classList.add('dark'); document.getElementById('theme-icon').classList.replace('fa-moon', 'fa-sun'); }
-        function handleSubscribe(e) { e.preventDefault(); const email = document.getElementById('sub-email').value; if(email) { alert(`¡Gracias! Hemos registrado el correo ${email}. Te avisaremos de las novedades.`); document.getElementById('sub-email').value = ''; } }
 
         // NAVEGACIÓN
         function showHome() { document.getElementById('home-view').classList.remove('hidden'); document.getElementById('tool-view').classList.add('hidden'); document.getElementById('back-btn').classList.add('hidden'); document.querySelectorAll('.tool-section').forEach(function(el) { el.classList.add('hidden'); }); }
@@ -375,21 +398,26 @@
         
         function showTool(toolId) {
             currentActiveTool = toolId; document.getElementById('home-view').classList.add('hidden'); document.getElementById('tool-view').classList.remove('hidden'); document.getElementById('back-btn').classList.remove('hidden'); document.querySelectorAll('.tool-section').forEach(function(el) { el.classList.add('hidden'); });
+            
+            // Las 9 herramientas
             const titles = {
                 'escanear': { t: 'Escanear Documento', d: 'Sube imágenes JPG/PNG o usa tu cámara.', icon: '<i class="fas fa-camera text-red-500"></i>', section: 'escanear-section' },
                 'unir': { t: 'Unir PDF', d: 'Une varios archivos arrastrándolos para cambiar su orden.', icon: '<i class="fas fa-layer-group text-blue-500"></i>', section: 'unir-section' },
                 'dividir': { t: 'Dividir PDF', d: 'Extrae páginas de tu documento.', icon: '<i class="fas fa-cut text-orange-500"></i>', section: 'generic-section' },
                 'comprimir': { t: 'Comprimir PDF', d: 'Reduce el tamaño de tu archivo.', icon: '<i class="fas fa-compress-arrows-alt text-green-500"></i>', section: 'generic-section' },
-                'office': { t: 'Convertir a PDF', d: 'Convierte documentos Word e Imágenes (JPG/PNG) a PDF.', icon: '<i class="fas fa-file-pdf text-purple-600"></i>', section: 'office-section' },
+                'office': { t: 'Convertir a PDF', d: 'Convierte documentos Word e Imágenes (JPG/PNG) a PDF.', icon: '<i class="fas fa-file-pdf text-purple-600 dark:text-purple-400"></i>', section: 'office-section' },
                 'webp': { t: 'Convertir Imagen', d: 'Transforma WEBP a formato JPG o PNG.', icon: '<i class="fas fa-file-image text-pink-500"></i>', section: 'webp-section' },
-                'numerar': { t: 'Numerar Páginas', d: 'Añade números de página automáticamente.', icon: '<i class="fas fa-list-ol text-teal-500"></i>', section: 'generic-section' }
+                'numerar': { t: 'Numerar Páginas', d: 'Añade números de página automáticamente.', icon: '<i class="fas fa-list-ol text-teal-500"></i>', section: 'generic-section' },
+                'eliminar': { t: 'Eliminar Páginas', d: 'Quita las hojas que no necesites.', icon: '<i class="fas fa-trash text-red-700"></i>', section: 'generic-section' },
+                'pdfword': { t: 'PDF a Word', d: 'Transforma tus archivos PDF a formato editable.', icon: '<i class="fas fa-file-word text-blue-700"></i>', section: 'generic-section' }
             };
+            
             document.getElementById('tool-title').innerHTML = titles[toolId].t; document.getElementById('tool-desc').innerHTML = titles[toolId].d; document.getElementById('tool-icon-container').innerHTML = titles[toolId].icon; document.getElementById(titles[toolId].section).classList.remove('hidden');
             if(document.getElementById('generic-result')) document.getElementById('generic-result').classList.add('hidden');
         }
         
-        function simulateGenericAction(event) { if(event.target.files.length > 0) { document.getElementById('generic-result').classList.remove('hidden'); setTimeout(function() { alert("¡Estructura de la herramienta lista para programar lógica interna!"); }, 500); } }
-        function submitContact() { if(!document.getElementById('contact-msg').value.trim()) return; alert("¡Mensaje enviado correctamente! Gracias por tus sugerencias."); document.getElementById('contact-modal').classList.add('hidden'); document.getElementById('contact-msg').value = ''; }
+        function simulateGenericAction(event) { if(event.target.files.length > 0) { document.getElementById('generic-result').classList.remove('hidden'); setTimeout(function() { mostrarAviso("¡Estructura de la herramienta lista para programar lógica interna!"); }, 500); } }
+        
         function getPageDimensions(format) { switch(format) { case 'a4': return [595.28, 841.89]; case 'letter': return [612, 792]; case 'legal': return [612, 1008]; default: return [595.28, 841.89]; } }
 
         // LÓGICA DE UNIR PDF
@@ -420,7 +448,7 @@
                     const file = unirFiles[i].file; const arrayBuffer = await file.arrayBuffer();
                     if (file.type === 'application/pdf') {
                         try { const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer); const copiedPages = await mergedPdf.copyPages(pdfDoc, pdfDoc.getPageIndices()); copiedPages.forEach(function(page) { mergedPdf.addPage(page); }); } 
-                        catch(e) { alert("No se pudo unir el archivo '" + file.name + "'. Puede estar dañado o con contraseña."); }
+                        catch(e) { mostrarAviso("No se pudo unir el archivo '" + file.name + "'. Puede estar dañado o con contraseña."); }
                     } else if (file.type.match('image.*')) {
                         let img; if (file.type === 'image/jpeg') { img = await mergedPdf.embedJpg(arrayBuffer); } else if (file.type === 'image/png') { img = await mergedPdf.embedPng(arrayBuffer); } else {
                             const imgElem = document.createElement('img'); const url = URL.createObjectURL(file); imgElem.src = url; await new Promise(function(res) { imgElem.onload = res; });
@@ -433,7 +461,7 @@
                 }
                 const pdfBytes = await mergedPdf.save(); const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
                 let fecha = new Date(); link.download = `Archivos_Unidos_${fecha.getFullYear()}${(fecha.getMonth()+1).toString().padStart(2, '0')}${fecha.getDate().toString().padStart(2, '0')}.pdf`; link.click();
-            } catch (error) { alert("Ocurrió un error al unir: " + error.message); } finally { btn.disabled = false; spinner.classList.add('hidden'); }
+            } catch (error) { mostrarAviso("Ocurrió un error al unir: " + error.message); } finally { btn.disabled = false; spinner.classList.add('hidden'); }
         }
 
         // LÓGICA DE ESCÁNER
@@ -449,7 +477,7 @@
             if(selectedImages.length > 0) { document.getElementById('action-bar-img').classList.remove('hidden'); } else { document.getElementById('action-bar-img').classList.add('hidden'); }
         }
         function removeImage(id) { selectedImages = selectedImages.filter(function(img) { return img.id.toString() !== id.toString(); }); renderImageList(); }
-        async function startCamera() { try { videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }); document.getElementById('video-element').srcObject = videoStream; document.getElementById('camera-container').style.display = 'block'; } catch (err) { alert("Error al acceder a la cámara."); } }
+        async function startCamera() { try { videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }); document.getElementById('video-element').srcObject = videoStream; document.getElementById('camera-container').style.display = 'block'; } catch (err) { mostrarAviso("Error al acceder a la cámara."); } }
         function closeCamera() { if (videoStream) { videoStream.getTracks().forEach(function(track) { track.stop(); }); } document.getElementById('camera-container').style.display = 'none'; }
         function takePhoto() {
             const video = document.getElementById('video-element'); const canvas = document.createElement('canvas'); canvas.width = video.videoWidth; canvas.height = video.videoHeight;
@@ -472,7 +500,7 @@
                 }
                 const pdfBytes = await pdfDoc.save(); const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
                 let fecha = new Date(); link.download = `Documento_Escaneado_${fecha.getFullYear()}${(fecha.getMonth()+1).toString().padStart(2, '0')}${fecha.getDate().toString().padStart(2, '0')}.pdf`; link.click();
-            } catch (error) { alert("Error técnico al generar PDF: " + error.message); } finally { btn.disabled = false; spinner.classList.add('hidden'); }
+            } catch (error) { mostrarAviso("Error técnico al generar PDF: " + error.message); } finally { btn.disabled = false; spinner.classList.add('hidden'); }
         }
 
         // ==========================================
@@ -510,7 +538,7 @@
                     document.getElementById('office-file-display').classList.remove('hidden'); 
                     document.getElementById('action-bar-office').classList.remove('hidden'); 
                     document.getElementById('drop-zone-office').classList.add('hidden');
-                } else { alert("Formato no válido. Sube un archivo Word (.doc, .docx) o Imagen (.jpg, .png)."); }
+                } else { mostrarAviso("Formato no válido. Sube un archivo Word (.doc, .docx) o Imagen (.jpg, .png)."); }
             }
         }
         
@@ -600,7 +628,7 @@
                 img.onload = function() {
                     const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height; canvas.getContext('2d').drawImage(img, 0, 0);
                     const dataUrl = canvas.toDataURL(format, 0.9); const link = document.createElement('a'); let originalName = currentWebpFile.name; let baseName = originalName.substring(0, originalName.lastIndexOf('.'));
-                    link.download = baseName + "_convertida." + ext; link.href = dataUrl; link.click(); alert("¡Imagen convertida y descargada exitosamente!"); removeWebpFile();
+                    link.download = baseName + "_convertida." + ext; link.href = dataUrl; link.click(); mostrarAviso("¡Imagen convertida y descargada exitosamente!"); removeWebpFile();
                 };
                 img.src = event.target.result;
             };
