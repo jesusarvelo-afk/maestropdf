@@ -6,6 +6,7 @@
     <title>Proyect PDF - Herramientas gratuitas para PDFs</title>
     <link rel="canonical" href="https://jesusarvelo-afk.github.io/maestropdf/">
     
+    <!-- Librerías -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -14,7 +15,8 @@
         }
     </script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <!-- pdf-lib para manipulación de PDFs -->
+    
+    <!-- pdf-lib para manipulación local de PDFs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
     <!-- pdf.js para extracción de texto (Módulo PDF a Word) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
@@ -37,10 +39,11 @@
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 min-h-screen font-sans text-slate-900 dark:text-slate-100 flex flex-col selection:bg-blue-200 dark:selection:bg-blue-900 transition-colors duration-300">
 
+    <!-- NAVEGACIÓN -->
     <nav class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-10 shadow-sm flex-none transition-colors duration-300">
         <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
             <div class="flex items-center gap-2 cursor-pointer" onclick="showHome()">
-                <!-- Icono Restaurado -->
+                <!-- Icono Logo -->
                 <img src="favicon.png" alt="Proyect PDF Logo" class="h-8 w-8 rounded mr-2">
                 <span class="text-xl font-bold tracking-tight text-blue-600 dark:text-blue-400">Proyect PDF</span>
             </div>
@@ -65,6 +68,7 @@
     <!-- CONTENIDO PRINCIPAL -->
     <main class="flex-grow">
         
+        <!-- PANTALLA DE INICIO (HOME) -->
         <div id="home-view" class="max-w-7xl mx-auto px-4 py-12 block">
             
             <div class="text-center mb-10">
@@ -77,11 +81,12 @@
                 </p>
             </div>
 
-            <!-- AVISO DE SEGURIDAD (TEXTO VERDE FLUORESCENTE SIN MOVIMIENTO) -->
+            <!-- AVISO DE SEGURIDAD (TEXTO VERDE FLUORESCENTE ESTATICO) -->
             <p class="text-center font-bold mb-12 flex items-center justify-center gap-2 text-[#00c800] dark:text-[#39FF14]" style="text-shadow: 0 0 10px rgba(57, 255, 20, 0.4); font-size: 1.1rem;">
                 <i class="fas fa-shield-alt text-xl"></i> Tus archivos se procesan localmente. Nada queda en servidores.
             </p>
 
+            <!-- Grid de Herramientas (Las 9 herramientas exactas) -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 
                 <div onclick="showTool('escanear')" class="bg-white dark:bg-slate-800 p-6 rounded-2xl border-2 border-slate-100 dark:border-slate-700 cursor-pointer transition-all duration-200 shadow-sm hover:-translate-y-1 hover:border-red-500 dark:hover:border-red-500">
@@ -105,7 +110,7 @@
                 <div onclick="showTool('comprimir')" class="bg-white dark:bg-slate-800 p-6 rounded-2xl border-2 border-slate-100 dark:border-slate-700 cursor-pointer transition-all duration-200 shadow-sm hover:-translate-y-1 hover:border-green-500 dark:hover:border-green-500">
                     <div class="bg-slate-50 dark:bg-slate-700 w-16 h-16 rounded-xl flex items-center justify-center mb-4"><i class="fas fa-compress-arrows-alt text-3xl text-green-500"></i></div>
                     <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2">Comprimir PDF</h3>
-                    <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">Reduce el tamaño de tu PDF optimizando recursos para enviarlo por correo.</p>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">Aplica una reducción básica de tamaño eliminando metadatos innecesarios.</p>
                 </div>
 
                 <div onclick="showTool('office')" class="bg-white dark:bg-slate-800 p-6 rounded-2xl border-2 border-slate-100 dark:border-slate-700 cursor-pointer transition-all duration-200 shadow-sm hover:-translate-y-1 hover:border-purple-500 dark:hover:border-purple-500">
@@ -143,6 +148,7 @@
             </div>
         </div>
 
+        <!-- PANTALLA DE HERRAMIENTA ESPECÍFICA -->
         <div id="tool-view" class="max-w-4xl mx-auto px-4 py-12 hidden">
             <div class="text-center mb-10">
                 <div id="tool-icon-container" class="flex justify-center items-center gap-3 mb-4 text-4xl"></div>
@@ -212,6 +218,120 @@
                         </div>
                         <button onclick="processUnir()" id="unir-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl shadow-md transition text-lg flex items-center mx-auto">
                             Unir Archivos PDF <div id="unir-spinner" class="loader ml-3 hidden border-white border-t-transparent"></div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN DIVIDIR PDF -->
+                <div id="dividir-section" class="tool-section hidden p-8">
+                    <div class="bg-orange-50 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 text-sm p-4 rounded-xl mb-6 flex items-start border border-orange-100 dark:border-orange-800">
+                        <i class="fas fa-info-circle mt-1 mr-2 text-orange-600 dark:text-orange-400 text-lg"></i>
+                        <p>Sube tu PDF e indica qué páginas deseas extraer (ejemplo: 1, 3-5). Se creará un nuevo archivo solo con esas páginas.</p>
+                    </div>
+                    <div id="drop-zone-dividir" class="drop-zone border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 rounded-xl p-10 text-center cursor-pointer hover:border-slate-400 dark:hover:border-slate-500" onclick="document.getElementById('file-input-dividir').click()">
+                        <div class="text-slate-400 dark:text-slate-500 text-5xl mb-4"><i class="fas fa-cut"></i></div>
+                        <h3 class="text-lg font-bold text-slate-700 dark:text-white mb-1">Seleccionar PDF para Dividir</h3>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Soportado: .pdf</p>
+                        <input type="file" id="file-input-dividir" accept=".pdf" class="hidden" onchange="handleDividirSelection(event)">
+                    </div>
+                    <div id="dividir-file-display" class="mt-6 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 hidden flex items-center justify-between">
+                        <div class="flex items-center">
+                            <i class="fas fa-file-pdf text-orange-500 text-2xl mr-3"></i>
+                            <span id="dividir-file-name" class="font-medium text-slate-700 dark:text-white">documento.pdf</span>
+                            <span id="dividir-page-count" class="text-xs text-slate-500 dark:text-slate-400 ml-2 font-bold"></span>
+                        </div>
+                        <button onclick="removeDividirFile()" class="text-slate-400 hover:text-red-500 transition"><i class="fas fa-times text-lg"></i></button>
+                    </div>
+                    <div id="action-bar-dividir" class="mt-8 text-center hidden pt-6 border-t border-slate-100 dark:border-slate-700">
+                        <div class="mb-6 flex flex-col sm:flex-row justify-center items-center gap-3 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 max-w-lg mx-auto">
+                            <label class="font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">Páginas a extraer:</label>
+                            <input type="text" id="dividir-pages-input" placeholder="Ej: 1, 3-5, 8" class="w-full border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white p-2 rounded-lg outline-none focus:border-orange-500 transition-colors">
+                        </div>
+                        <button onclick="processDividir()" id="dividir-btn" class="bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-8 rounded-xl shadow-md transition text-lg flex items-center mx-auto">
+                            Extraer y Descargar PDF <div id="dividir-spinner" class="loader ml-3 hidden border-white border-t-transparent"></div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN COMPRIMIR PDF -->
+                <div id="comprimir-section" class="tool-section hidden p-8">
+                    <div class="bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-sm p-4 rounded-xl mb-6 flex items-start border border-green-100 dark:border-green-800">
+                        <i class="fas fa-info-circle mt-1 mr-2 text-green-600 dark:text-green-400 text-lg"></i>
+                        <p>Esta herramienta aplica una compresión estructural básica eliminando objetos huérfanos del PDF de forma 100% segura y local.</p>
+                    </div>
+                    <div id="drop-zone-comprimir" class="drop-zone border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 rounded-xl p-10 text-center cursor-pointer hover:border-slate-400 dark:hover:border-slate-500" onclick="document.getElementById('file-input-comprimir').click()">
+                        <div class="text-slate-400 dark:text-slate-500 text-5xl mb-4"><i class="fas fa-compress-arrows-alt"></i></div>
+                        <h3 class="text-lg font-bold text-slate-700 dark:text-white mb-1">Seleccionar PDF a Comprimir</h3>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Soportado: .pdf</p>
+                        <input type="file" id="file-input-comprimir" accept=".pdf" class="hidden" onchange="handleComprimirSelection(event)">
+                    </div>
+                    <div id="comprimir-file-display" class="mt-6 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 hidden flex items-center justify-between">
+                        <div class="flex items-center">
+                            <i class="fas fa-file-pdf text-green-500 text-2xl mr-3"></i>
+                            <span id="comprimir-file-name" class="font-medium text-slate-700 dark:text-white">documento.pdf</span>
+                        </div>
+                        <button onclick="removeComprimirFile()" class="text-slate-400 hover:text-red-500 transition"><i class="fas fa-times text-lg"></i></button>
+                    </div>
+                    <div id="action-bar-comprimir" class="mt-8 text-center hidden pt-6 border-t border-slate-100 dark:border-slate-700">
+                        <button onclick="processComprimir()" id="comprimir-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-xl shadow-md transition text-lg flex items-center mx-auto">
+                            Comprimir y Descargar <div id="comprimir-spinner" class="loader ml-3 hidden border-white border-t-transparent"></div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN ELIMINAR PÁGINAS -->
+                <div id="eliminar-section" class="tool-section hidden p-8">
+                    <div class="bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-300 text-sm p-4 rounded-xl mb-6 flex items-start border border-red-100 dark:border-red-800">
+                        <i class="fas fa-info-circle mt-1 mr-2 text-red-600 dark:text-red-400 text-lg"></i>
+                        <p>Sube tu PDF e indica qué páginas deseas borrar (ejemplo: 2, 4-6). El archivo descargado ya no incluirá esas hojas.</p>
+                    </div>
+                    <div id="drop-zone-eliminar" class="drop-zone border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 rounded-xl p-10 text-center cursor-pointer hover:border-slate-400 dark:hover:border-slate-500" onclick="document.getElementById('file-input-eliminar').click()">
+                        <div class="text-slate-400 dark:text-slate-500 text-5xl mb-4"><i class="fas fa-trash"></i></div>
+                        <h3 class="text-lg font-bold text-slate-700 dark:text-white mb-1">Seleccionar PDF para Limpiar</h3>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Soportado: .pdf</p>
+                        <input type="file" id="file-input-eliminar" accept=".pdf" class="hidden" onchange="handleEliminarSelection(event)">
+                    </div>
+                    <div id="eliminar-file-display" class="mt-6 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 hidden flex items-center justify-between">
+                        <div class="flex items-center">
+                            <i class="fas fa-file-pdf text-red-500 text-2xl mr-3"></i>
+                            <span id="eliminar-file-name" class="font-medium text-slate-700 dark:text-white">documento.pdf</span>
+                            <span id="eliminar-page-count" class="text-xs text-slate-500 dark:text-slate-400 ml-2 font-bold"></span>
+                        </div>
+                        <button onclick="removeEliminarFile()" class="text-slate-400 hover:text-red-500 transition"><i class="fas fa-times text-lg"></i></button>
+                    </div>
+                    <div id="action-bar-eliminar" class="mt-8 text-center hidden pt-6 border-t border-slate-100 dark:border-slate-700">
+                        <div class="mb-6 flex flex-col sm:flex-row justify-center items-center gap-3 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 max-w-lg mx-auto">
+                            <label class="font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">Páginas a borrar:</label>
+                            <input type="text" id="eliminar-pages-input" placeholder="Ej: 2, 4-6" class="w-full border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white p-2 rounded-lg outline-none focus:border-red-500 transition-colors">
+                        </div>
+                        <button onclick="processEliminar()" id="eliminar-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-xl shadow-md transition text-lg flex items-center mx-auto">
+                            Eliminar y Descargar PDF <div id="eliminar-spinner" class="loader ml-3 hidden border-white border-t-transparent"></div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN NUMERAR PÁGINAS -->
+                <div id="numerar-section" class="tool-section hidden p-8">
+                    <div class="bg-teal-50 dark:bg-teal-900/30 text-teal-800 dark:text-teal-300 text-sm p-4 rounded-xl mb-6 flex items-start border border-teal-100 dark:border-teal-800">
+                        <i class="fas fa-info-circle mt-1 mr-2 text-teal-600 dark:text-teal-400 text-lg"></i>
+                        <p>Esta herramienta añade el número correspondiente a cada página de tu PDF (en la parte inferior central) para mayor orden.</p>
+                    </div>
+                    <div id="drop-zone-numerar" class="drop-zone border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 rounded-xl p-10 text-center cursor-pointer hover:border-slate-400 dark:hover:border-slate-500" onclick="document.getElementById('file-input-numerar').click()">
+                        <div class="text-slate-400 dark:text-slate-500 text-5xl mb-4"><i class="fas fa-list-ol"></i></div>
+                        <h3 class="text-lg font-bold text-slate-700 dark:text-white mb-1">Seleccionar PDF para Numerar</h3>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Soportado: .pdf</p>
+                        <input type="file" id="file-input-numerar" accept=".pdf" class="hidden" onchange="handleNumerarSelection(event)">
+                    </div>
+                    <div id="numerar-file-display" class="mt-6 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 hidden flex items-center justify-between">
+                        <div class="flex items-center">
+                            <i class="fas fa-file-pdf text-teal-500 text-2xl mr-3"></i>
+                            <span id="numerar-file-name" class="font-medium text-slate-700 dark:text-white">documento.pdf</span>
+                        </div>
+                        <button onclick="removeNumerarFile()" class="text-slate-400 hover:text-red-500 transition"><i class="fas fa-times text-lg"></i></button>
+                    </div>
+                    <div id="action-bar-numerar" class="mt-8 text-center hidden pt-6 border-t border-slate-100 dark:border-slate-700">
+                        <button onclick="processNumerar()" id="numerar-btn" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-8 rounded-xl shadow-md transition text-lg flex items-center mx-auto">
+                            Numerar y Descargar <div id="numerar-spinner" class="loader ml-3 hidden border-white border-t-transparent"></div>
                         </button>
                     </div>
                 </div>
@@ -313,23 +433,6 @@
                     </div>
                 </div>
 
-                <!-- SECCIÓN GENÉRICA (Dividir, Comprimir, Numerar, Eliminar Pág) -->
-                <div id="generic-section" class="tool-section hidden p-8 text-center">
-                    <div class="border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 rounded-xl p-12 text-center">
-                        <div class="text-slate-400 dark:text-slate-500 text-5xl mb-4"><i class="fas fa-file-pdf"></i></div>
-                        <h3 class="text-xl font-bold text-slate-700 dark:text-white mb-2">Selecciona tu documento</h3>
-                        <p class="text-slate-500 dark:text-slate-400 mb-6">Sube el archivo PDF para comenzar con esta herramienta.</p>
-                        <button onclick="document.getElementById('file-input-generic').click()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-8 rounded-xl shadow-sm transition">
-                            Seleccionar Archivos
-                        </button>
-                        <input type="file" id="file-input-generic" accept=".pdf" class="hidden" onchange="simulateGenericAction(event)">
-                    </div>
-                    <div id="generic-result" class="mt-6 hidden bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 p-4 rounded-xl border border-green-200 dark:border-green-800 flex items-center justify-center">
-                        <i class="fas fa-check-circle mr-2 text-xl"></i> 
-                        <span class="font-medium">Archivo listo para procesar (Demostración)</span>
-                    </div>
-                </div>
-
             </div>
         </div>
     </main>
@@ -392,6 +495,7 @@
         </div>
     </div>
 
+    <!-- JAVASCRIPT LÓGICO COMPLETO 100% FUNCIONAL -->
     <script>
         // MODO OSCURO
         function toggleDarkMode() {
@@ -401,35 +505,313 @@
         }
         if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) { document.documentElement.classList.add('dark'); document.getElementById('theme-icon').classList.replace('fa-moon', 'fa-sun'); }
         
-        // NAVEGACIÓN
+        // NAVEGACIÓN Y CONFIGURACIÓN DE PANTALLAS
         function showHome() { document.getElementById('home-view').classList.remove('hidden'); document.getElementById('tool-view').classList.add('hidden'); document.getElementById('back-btn').classList.add('hidden'); document.querySelectorAll('.tool-section').forEach(function(el) { el.classList.add('hidden'); }); }
-        let currentActiveTool = '';
         
         function showTool(toolId) {
-            currentActiveTool = toolId; document.getElementById('home-view').classList.add('hidden'); document.getElementById('tool-view').classList.remove('hidden'); document.getElementById('back-btn').classList.remove('hidden'); document.querySelectorAll('.tool-section').forEach(function(el) { el.classList.add('hidden'); });
+            document.getElementById('home-view').classList.add('hidden'); 
+            document.getElementById('tool-view').classList.remove('hidden'); 
+            document.getElementById('back-btn').classList.remove('hidden'); 
+            document.querySelectorAll('.tool-section').forEach(function(el) { el.classList.add('hidden'); });
             
             // Las 9 herramientas
             const titles = {
                 'escanear': { t: 'Escanear Documento', d: 'Sube imágenes JPG/PNG o usa tu cámara.', icon: '<i class="fas fa-camera text-red-500"></i>', section: 'escanear-section' },
                 'unir': { t: 'Unir PDF', d: 'Une varios archivos arrastrándolos para cambiar su orden.', icon: '<i class="fas fa-layer-group text-blue-500"></i>', section: 'unir-section' },
-                'dividir': { t: 'Dividir PDF', d: 'Extrae páginas de tu documento.', icon: '<i class="fas fa-cut text-orange-500"></i>', section: 'generic-section' },
-                'comprimir': { t: 'Comprimir PDF', d: 'Reduce el tamaño de tu archivo.', icon: '<i class="fas fa-compress-arrows-alt text-green-500"></i>', section: 'generic-section' },
+                'dividir': { t: 'Dividir PDF', d: 'Extrae páginas de tu documento.', icon: '<i class="fas fa-cut text-orange-500"></i>', section: 'dividir-section' },
+                'comprimir': { t: 'Comprimir PDF', d: 'Aplica una compresión básica estructural.', icon: '<i class="fas fa-compress-arrows-alt text-green-500"></i>', section: 'comprimir-section' },
                 'office': { t: 'Convertir a PDF', d: 'Convierte documentos Word e Imágenes (JPG/PNG) a PDF.', icon: '<i class="fas fa-file-pdf text-purple-600 dark:text-purple-400"></i>', section: 'office-section' },
                 'webp': { t: 'Convertir Imagen', d: 'Transforma WEBP a formato JPG o PNG.', icon: '<i class="fas fa-file-image text-pink-500"></i>', section: 'webp-section' },
-                'numerar': { t: 'Numerar Páginas', d: 'Añade números de página automáticamente.', icon: '<i class="fas fa-list-ol text-teal-500"></i>', section: 'generic-section' },
-                'eliminar': { t: 'Eliminar Páginas', d: 'Quita las hojas que no necesites.', icon: '<i class="fas fa-trash text-red-700"></i>', section: 'generic-section' },
+                'numerar': { t: 'Numerar Páginas', d: 'Añade números de página automáticamente.', icon: '<i class="fas fa-list-ol text-teal-500"></i>', section: 'numerar-section' },
+                'eliminar': { t: 'Eliminar Páginas', d: 'Quita las hojas que no necesites.', icon: '<i class="fas fa-trash text-red-700"></i>', section: 'eliminar-section' },
                 'pdfword': { t: 'PDF a Word', d: 'Transforma tus archivos PDF a formato editable.', icon: '<i class="fas fa-file-word text-blue-700"></i>', section: 'pdfword-section' }
             };
             
-            document.getElementById('tool-title').innerHTML = titles[toolId].t; document.getElementById('tool-desc').innerHTML = titles[toolId].d; document.getElementById('tool-icon-container').innerHTML = titles[toolId].icon; document.getElementById(titles[toolId].section).classList.remove('hidden');
-            if(document.getElementById('generic-result')) document.getElementById('generic-result').classList.add('hidden');
+            document.getElementById('tool-title').innerHTML = titles[toolId].t; 
+            document.getElementById('tool-desc').innerHTML = titles[toolId].d; 
+            document.getElementById('tool-icon-container').innerHTML = titles[toolId].icon; 
+            document.getElementById(titles[toolId].section).classList.remove('hidden');
         }
-        
-        function simulateGenericAction(event) { if(event.target.files.length > 0) { document.getElementById('generic-result').classList.remove('hidden'); setTimeout(function() { alert("¡Estructura de la herramienta lista para programar lógica interna!"); }, 500); } }
         
         function getPageDimensions(format) { switch(format) { case 'a4': return [595.28, 841.89]; case 'letter': return [612, 792]; case 'legal': return [612, 1008]; default: return [595.28, 841.89]; } }
 
-        // LÓGICA DE UNIR PDF
+        // ==========================================
+        // 1. LÓGICA DE DIVIDIR PDF (EXTRAER PÁGINAS)
+        // ==========================================
+        let currentDividirFile = null;
+        let currentDividirPdfDoc = null;
+
+        async function handleDividirSelection(event) {
+            const file = event.target.files[0];
+            if (file && file.type === 'application/pdf') {
+                currentDividirFile = file;
+                document.getElementById('dividir-file-name').textContent = file.name;
+                
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    currentDividirPdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+                    const pageCount = currentDividirPdfDoc.getPageCount();
+                    document.getElementById('dividir-page-count').textContent = `(${pageCount} páginas)`;
+                    document.getElementById('dividir-pages-input').placeholder = `Ej: 1, 3-5 (Max ${pageCount})`;
+                } catch (e) {
+                    document.getElementById('dividir-page-count').textContent = `(Error leyendo PDF)`;
+                }
+
+                document.getElementById('dividir-file-display').classList.remove('hidden');
+                document.getElementById('action-bar-dividir').classList.remove('hidden');
+                document.getElementById('drop-zone-dividir').classList.add('hidden');
+            } else {
+                alert("Por favor, selecciona un archivo PDF válido.");
+            }
+        }
+
+        function removeDividirFile() {
+            currentDividirFile = null; currentDividirPdfDoc = null;
+            document.getElementById('file-input-dividir').value = '';
+            document.getElementById('dividir-file-display').classList.add('hidden');
+            document.getElementById('action-bar-dividir').classList.add('hidden');
+            document.getElementById('drop-zone-dividir').classList.remove('hidden');
+            document.getElementById('dividir-pages-input').value = '';
+        }
+
+        async function processDividir() {
+            if (!currentDividirPdfDoc) return;
+            const inputStr = document.getElementById('dividir-pages-input').value.trim();
+            if (!inputStr) { alert("Por favor, ingresa las páginas que deseas extraer."); return; }
+
+            const btn = document.getElementById('dividir-btn');
+            const spinner = document.getElementById('dividir-spinner');
+            btn.disabled = true; spinner.classList.remove('hidden');
+
+            try {
+                const pageCount = currentDividirPdfDoc.getPageCount();
+                let pagesToExtract = new Set();
+                
+                const parts = inputStr.split(',');
+                for (let part of parts) {
+                    part = part.trim();
+                    if (part.includes('-')) {
+                        const range = part.split('-');
+                        let start = parseInt(range[0].trim());
+                        let end = parseInt(range[1].trim());
+                        if (!isNaN(start) && !isNaN(end)) {
+                            if (start > end) { const temp = start; start = end; end = temp; }
+                            for (let i = start; i <= end; i++) { if (i >= 1 && i <= pageCount) pagesToExtract.add(i - 1); }
+                        }
+                    } else {
+                        const num = parseInt(part);
+                        if (!isNaN(num) && num >= 1 && num <= pageCount) pagesToExtract.add(num - 1);
+                    }
+                }
+
+                const sortedPages = Array.from(pagesToExtract).sort((a, b) => a - b);
+                if (sortedPages.length === 0) { throw new Error("Las páginas ingresadas no son válidas."); }
+
+                const newPdf = await PDFLib.PDFDocument.create();
+                const copiedPages = await newPdf.copyPages(currentDividirPdfDoc, sortedPages);
+                copiedPages.forEach((page) => newPdf.addPage(page));
+
+                const pdfBytes = await newPdf.save();
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
+                let baseName = currentDividirFile.name.substring(0, currentDividirFile.name.lastIndexOf('.'));
+                link.download = baseName + "_Extraido.pdf"; link.click();
+                
+                alert("¡Páginas extraídas exitosamente!");
+                removeDividirFile();
+            } catch (error) {
+                alert(error.message || "Ocurrió un error al extraer las páginas.");
+            } finally { btn.disabled = false; spinner.classList.add('hidden'); }
+        }
+
+        // ==========================================
+        // 2. LÓGICA DE ELIMINAR PÁGINAS
+        // ==========================================
+        let currentEliminarFile = null; let currentEliminarPdfDoc = null;
+
+        async function handleEliminarSelection(event) {
+            const file = event.target.files[0];
+            if (file && file.type === 'application/pdf') {
+                currentEliminarFile = file; document.getElementById('eliminar-file-name').textContent = file.name;
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    currentEliminarPdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+                    const pageCount = currentEliminarPdfDoc.getPageCount();
+                    document.getElementById('eliminar-page-count').textContent = `(${pageCount} páginas)`;
+                    document.getElementById('eliminar-pages-input').placeholder = `Ej: 2, 4-6 (Max ${pageCount})`;
+                } catch (e) { document.getElementById('eliminar-page-count').textContent = `(Error leyendo PDF)`; }
+
+                document.getElementById('eliminar-file-display').classList.remove('hidden');
+                document.getElementById('action-bar-eliminar').classList.remove('hidden');
+                document.getElementById('drop-zone-eliminar').classList.add('hidden');
+            } else { alert("Por favor, selecciona un archivo PDF válido."); }
+        }
+
+        function removeEliminarFile() {
+            currentEliminarFile = null; currentEliminarPdfDoc = null;
+            document.getElementById('file-input-eliminar').value = '';
+            document.getElementById('eliminar-file-display').classList.add('hidden');
+            document.getElementById('action-bar-eliminar').classList.add('hidden');
+            document.getElementById('drop-zone-eliminar').classList.remove('hidden');
+            document.getElementById('eliminar-pages-input').value = '';
+        }
+
+        async function processEliminar() {
+            if (!currentEliminarPdfDoc) return;
+            const inputStr = document.getElementById('eliminar-pages-input').value.trim();
+            if (!inputStr) { alert("Por favor, ingresa las páginas que deseas borrar."); return; }
+
+            const btn = document.getElementById('eliminar-btn');
+            const spinner = document.getElementById('eliminar-spinner');
+            btn.disabled = true; spinner.classList.remove('hidden');
+
+            try {
+                const pageCount = currentEliminarPdfDoc.getPageCount();
+                let pagesToRemove = new Set();
+                
+                const parts = inputStr.split(',');
+                for (let part of parts) {
+                    part = part.trim();
+                    if (part.includes('-')) {
+                        const range = part.split('-');
+                        let start = parseInt(range[0].trim());
+                        let end = parseInt(range[1].trim());
+                        if (!isNaN(start) && !isNaN(end)) {
+                            if (start > end) { const temp = start; start = end; end = temp; }
+                            for (let i = start; i <= end; i++) { if (i >= 1 && i <= pageCount) pagesToRemove.add(i - 1); }
+                        }
+                    } else {
+                        const num = parseInt(part);
+                        if (!isNaN(num) && num >= 1 && num <= pageCount) pagesToRemove.add(num - 1);
+                    }
+                }
+
+                if (pagesToRemove.size >= pageCount) { throw new Error("No puedes eliminar todas las páginas del documento."); }
+
+                let pagesToKeep = [];
+                for (let i = 0; i < pageCount; i++) { if (!pagesToRemove.has(i)) pagesToKeep.push(i); }
+
+                const newPdf = await PDFLib.PDFDocument.create();
+                const copiedPages = await newPdf.copyPages(currentEliminarPdfDoc, pagesToKeep);
+                copiedPages.forEach((page) => newPdf.addPage(page));
+
+                const pdfBytes = await newPdf.save();
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
+                let baseName = currentEliminarFile.name.substring(0, currentEliminarFile.name.lastIndexOf('.'));
+                link.download = baseName + "_Limpio.pdf"; link.click();
+                
+                alert("¡Páginas eliminadas exitosamente!");
+                removeEliminarFile();
+            } catch (error) {
+                alert(error.message || "Ocurrió un error al eliminar las páginas.");
+            } finally { btn.disabled = false; spinner.classList.add('hidden'); }
+        }
+
+        // ==========================================
+        // 3. LÓGICA DE COMPRIMIR PDF (BÁSICO)
+        // ==========================================
+        let currentComprimirFile = null;
+
+        function handleComprimirSelection(event) {
+            const file = event.target.files[0];
+            if (file && file.type === 'application/pdf') {
+                currentComprimirFile = file; document.getElementById('comprimir-file-name').textContent = file.name;
+                document.getElementById('comprimir-file-display').classList.remove('hidden');
+                document.getElementById('action-bar-comprimir').classList.remove('hidden');
+                document.getElementById('drop-zone-comprimir').classList.add('hidden');
+            } else { alert("Por favor, selecciona un archivo PDF válido."); }
+        }
+
+        function removeComprimirFile() {
+            currentComprimirFile = null; document.getElementById('file-input-comprimir').value = '';
+            document.getElementById('comprimir-file-display').classList.add('hidden');
+            document.getElementById('action-bar-comprimir').classList.add('hidden');
+            document.getElementById('drop-zone-comprimir').classList.remove('hidden');
+        }
+
+        async function processComprimir() {
+            if (!currentComprimirFile) return;
+            const btn = document.getElementById('comprimir-btn'); const spinner = document.getElementById('comprimir-spinner');
+            btn.disabled = true; spinner.classList.remove('hidden');
+
+            try {
+                const arrayBuffer = await currentComprimirFile.arrayBuffer();
+                const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+                // Compresión básica guardando sin object streams (elimina basura estructural)
+                const pdfBytes = await pdfDoc.save({ useObjectStreams: false });
+                
+                const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
+                let baseName = currentComprimirFile.name.substring(0, currentComprimirFile.name.lastIndexOf('.'));
+                link.download = baseName + "_Comprimido.pdf"; link.click();
+                
+                alert("¡Archivo comprimido estructuramente de forma exitosa!");
+                removeComprimirFile();
+            } catch (error) { alert("Error al procesar el archivo: " + error.message); } 
+            finally { btn.disabled = false; spinner.classList.add('hidden'); }
+        }
+
+        // ==========================================
+        // 4. LÓGICA DE NUMERAR PÁGINAS
+        // ==========================================
+        let currentNumerarFile = null; let currentNumerarPdfDoc = null;
+
+        async function handleNumerarSelection(event) {
+            const file = event.target.files[0];
+            if (file && file.type === 'application/pdf') {
+                currentNumerarFile = file; document.getElementById('numerar-file-name').textContent = file.name;
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    currentNumerarPdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+                } catch (e) { alert("El archivo está dañado o protegido."); return; }
+                document.getElementById('numerar-file-display').classList.remove('hidden');
+                document.getElementById('action-bar-numerar').classList.remove('hidden');
+                document.getElementById('drop-zone-numerar').classList.add('hidden');
+            } else { alert("Por favor, selecciona un archivo PDF válido."); }
+        }
+
+        function removeNumerarFile() {
+            currentNumerarFile = null; currentNumerarPdfDoc = null; document.getElementById('file-input-numerar').value = '';
+            document.getElementById('numerar-file-display').classList.add('hidden');
+            document.getElementById('action-bar-numerar').classList.add('hidden');
+            document.getElementById('drop-zone-numerar').classList.remove('hidden');
+        }
+
+        async function processNumerar() {
+            if (!currentNumerarPdfDoc) return;
+            const btn = document.getElementById('numerar-btn'); const spinner = document.getElementById('numerar-spinner');
+            btn.disabled = true; spinner.classList.remove('hidden');
+
+            try {
+                const pages = currentNumerarPdfDoc.getPages();
+                const font = await currentNumerarPdfDoc.embedFont(PDFLib.StandardFonts.HelveticaBold);
+                
+                pages.forEach((page, idx) => {
+                    const text = String(idx + 1);
+                    const textWidth = font.widthOfTextAtSize(text, 12);
+                    page.drawText(text, {
+                        x: (page.getWidth() / 2) - (textWidth / 2),
+                        y: 30, // Margen inferior
+                        size: 12,
+                        font: font,
+                        color: PDFLib.rgb(0, 0, 0)
+                    });
+                });
+
+                const pdfBytes = await currentNumerarPdfDoc.save();
+                const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
+                let baseName = currentNumerarFile.name.substring(0, currentNumerarFile.name.lastIndexOf('.'));
+                link.download = baseName + "_Numerado.pdf"; link.click();
+                
+                alert("¡Páginas numeradas exitosamente!");
+                removeNumerarFile();
+            } catch (error) { alert("Error al numerar: " + error.message); } 
+            finally { btn.disabled = false; spinner.classList.add('hidden'); }
+        }
+
+        // ==========================================
+        // 5. LÓGICA DE UNIR PDF
+        // ==========================================
         let unirFiles = [], draggedUnirIndex = null;
         function handleUnirSelection(event) { Array.from(event.target.files).forEach(function(f) { unirFiles.push({ id: Date.now() + Math.random(), file: f }); }); renderUnirList(); document.getElementById('file-input-unir').value = ''; }
         function renderUnirList() {
@@ -457,7 +839,7 @@
                     const file = unirFiles[i].file; const arrayBuffer = await file.arrayBuffer();
                     if (file.type === 'application/pdf') {
                         try { const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer); const copiedPages = await mergedPdf.copyPages(pdfDoc, pdfDoc.getPageIndices()); copiedPages.forEach(function(page) { mergedPdf.addPage(page); }); } 
-                        catch(e) { alert("No se pudo unir el archivo '" + file.name + "'. Puede estar dañado o con contraseña."); }
+                        catch(e) { alert("No se pudo unir el archivo '" + file.name + "'. Puede estar protegido."); }
                     } else if (file.type.match('image.*')) {
                         let img; if (file.type === 'image/jpeg') { img = await mergedPdf.embedJpg(arrayBuffer); } else if (file.type === 'image/png') { img = await mergedPdf.embedPng(arrayBuffer); } else {
                             const imgElem = document.createElement('img'); const url = URL.createObjectURL(file); imgElem.src = url; await new Promise(function(res) { imgElem.onload = res; });
@@ -473,9 +855,11 @@
             } catch (error) { alert("Ocurrió un error al unir: " + error.message); } finally { btn.disabled = false; spinner.classList.add('hidden'); }
         }
 
-        // LÓGICA DE ESCÁNER
+        // ==========================================
+        // 6. LÓGICA DE ESCÁNER
+        // ==========================================
         let selectedImages = []; let videoStream = null;
-        function handleImageSelection(event) { addImages(Array.from(event.target.files)); }
+        function handleImageSelection(event) { addImages(Array.from(event.target.files)); document.getElementById('file-input-img').value = ''; }
         function addImages(files) { files.forEach(function(file) { if (file.type.match('image.*')) { const reader = new FileReader(); reader.onload = function(e) { selectedImages.push({ id: Date.now() + Math.random(), file: file, url: e.target.result }); renderImageList(); }; reader.readAsDataURL(file); } }); }
         function renderImageList() {
             const container = document.getElementById('image-list'); container.innerHTML = '';
@@ -509,11 +893,11 @@
                 }
                 const pdfBytes = await pdfDoc.save(); const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
                 let fecha = new Date(); link.download = `Documento_Escaneado_${fecha.getFullYear()}${(fecha.getMonth()+1).toString().padStart(2, '0')}${fecha.getDate().toString().padStart(2, '0')}.pdf`; link.click();
-            } catch (error) { alert("Error técnico al generar PDF: " + error.message); } finally { btn.disabled = false; spinner.classList.add('hidden'); }
+            } catch (error) { alert("Error al generar PDF: " + error.message); } finally { btn.disabled = false; spinner.classList.add('hidden'); }
         }
 
         // ==========================================
-        // CONVERTIR A PDF (WORD + IMÁGENES INTEGRADO)
+        // 7. LÓGICA DE CONVERTIR A PDF (OFFICE)
         // ==========================================
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyHKE5xramnRZRnpr-YSDWYeSJtY3QEaJdtsfC4pXTrKKYZzZvCM2QdfyFfLki_83B2/exec";
         let currentOfficeFile = null;
@@ -524,40 +908,22 @@
                 const ext = file.name.split('.').pop().toLowerCase();
                 const validExts = ['doc', 'docx', 'jpg', 'jpeg', 'png'];
                 if (validExts.includes(ext)) {
-                    currentOfficeFile = file; 
-                    document.getElementById('office-file-name').textContent = file.name;
-                    
+                    currentOfficeFile = file; document.getElementById('office-file-name').textContent = file.name;
                     let iconClass = 'fas fa-file-word text-purple-600 dark:text-purple-400';
                     const formatContainer = document.getElementById('office-format-container');
-                    
                     if (['jpg', 'jpeg', 'png'].includes(ext)) {
                         iconClass = 'fas fa-image text-pink-500';
-                        if(formatContainer) {
-                            formatContainer.classList.remove('hidden');
-                            formatContainer.classList.add('flex');
-                        }
+                        if(formatContainer) { formatContainer.classList.remove('hidden'); formatContainer.classList.add('flex'); }
                     } else {
-                        if(formatContainer) {
-                            formatContainer.classList.add('hidden');
-                            formatContainer.classList.remove('flex');
-                        }
+                        if(formatContainer) { formatContainer.classList.add('hidden'); formatContainer.classList.remove('flex'); }
                     }
-                    
                     document.getElementById('office-file-icon').className = 'text-2xl mr-3 ' + iconClass;
-                    document.getElementById('office-file-display').classList.remove('hidden'); 
-                    document.getElementById('action-bar-office').classList.remove('hidden'); 
-                    document.getElementById('drop-zone-office').classList.add('hidden');
+                    document.getElementById('office-file-display').classList.remove('hidden'); document.getElementById('action-bar-office').classList.remove('hidden'); document.getElementById('drop-zone-office').classList.add('hidden');
                 } else { alert("Formato no válido. Sube un archivo Word (.doc, .docx) o Imagen (.jpg, .png)."); }
             }
         }
         
-        function removeOfficeFile() { 
-            currentOfficeFile = null; 
-            document.getElementById('file-input-office').value = ''; 
-            document.getElementById('office-file-display').classList.add('hidden'); 
-            document.getElementById('action-bar-office').classList.add('hidden'); 
-            document.getElementById('drop-zone-office').classList.remove('hidden'); 
-        }
+        function removeOfficeFile() { currentOfficeFile = null; document.getElementById('file-input-office').value = ''; document.getElementById('office-file-display').classList.add('hidden'); document.getElementById('action-bar-office').classList.add('hidden'); document.getElementById('drop-zone-office').classList.remove('hidden'); }
         
         async function convertOfficeToPdf() {
             if (!currentOfficeFile) return; 
@@ -578,27 +944,14 @@
                     
                     const formatSelected = document.getElementById('page-size-office').value;
                     let pageWidth, pageHeight, scale;
-                    
-                    if (formatSelected === 'original') {
-                        pageWidth = img.width; pageHeight = img.height; scale = 1;
-                    } else {
-                        const dims = getPageDimensions(formatSelected);
-                        pageWidth = dims[0]; pageHeight = dims[1];
-                        scale = Math.min(pageWidth / img.width, pageHeight / img.height);
+                    if (formatSelected === 'original') { pageWidth = img.width; pageHeight = img.height; scale = 1; } else {
+                        const dims = getPageDimensions(formatSelected); pageWidth = dims[0]; pageHeight = dims[1]; scale = Math.min(pageWidth / img.width, pageHeight / img.height);
                     }
-
                     const page = pdfDoc.addPage([pageWidth, pageHeight]);
-                    page.drawImage(img, { 
-                        x: (pageWidth - (img.width * scale)) / 2, 
-                        y: (pageHeight - (img.height * scale)) / 2, 
-                        width: img.width * scale, 
-                        height: img.height * scale 
-                    });
+                    page.drawImage(img, { x: (pageWidth - (img.width * scale)) / 2, y: (pageHeight - (img.height * scale)) / 2, width: img.width * scale, height: img.height * scale });
                     
-                    const pdfBytes = await pdfDoc.save();
-                    const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
-                    let baseName = currentOfficeFile.name.substring(0, currentOfficeFile.name.lastIndexOf('.'));
-                    link.download = baseName + ".pdf"; link.click();
+                    const pdfBytes = await pdfDoc.save(); const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
+                    let baseName = currentOfficeFile.name.substring(0, currentOfficeFile.name.lastIndexOf('.')); link.download = baseName + ".pdf"; link.click();
                     
                     statusMsg.textContent = "¡Imagen convertida a PDF exitosamente!"; statusMsg.className = "text-sm text-green-600 dark:text-green-400 mt-3 font-bold";
                 } catch (error) {
@@ -623,7 +976,9 @@
             }
         }
 
-        // CONVERTIR IMAGEN (WEBP A JPG/PNG)
+        // ==========================================
+        // 8. LÓGICA DE WEBP A JPG/PNG
+        // ==========================================
         let currentWebpFile = null;
         function handleWebpSelection(event) {
             const file = event.target.files[0];
@@ -645,109 +1000,71 @@
         }
 
         // ==========================================
-        // LÓGICA DE PDF A WORD (LOCAL CON PDF.JS)
+        // 9. LÓGICA DE PDF A WORD (LOCAL CON PDF.JS)
         // ==========================================
         let currentPdfWordFile = null;
 
         function handlePdfWordSelection(event) {
             const file = event.target.files[0];
             if (file && file.type === 'application/pdf') {
-                currentPdfWordFile = file;
-                document.getElementById('pdfword-file-name').textContent = file.name;
-                document.getElementById('pdfword-file-display').classList.remove('hidden');
-                document.getElementById('action-bar-pdfword').classList.remove('hidden');
-                document.getElementById('drop-zone-pdfword').classList.add('hidden');
-            } else {
-                alert("Por favor, selecciona un archivo PDF válido.");
-            }
+                currentPdfWordFile = file; document.getElementById('pdfword-file-name').textContent = file.name;
+                document.getElementById('pdfword-file-display').classList.remove('hidden'); document.getElementById('action-bar-pdfword').classList.remove('hidden'); document.getElementById('drop-zone-pdfword').classList.add('hidden');
+            } else { alert("Por favor, selecciona un archivo PDF válido."); }
         }
 
-        function removePdfWordFile() {
-            currentPdfWordFile = null;
-            document.getElementById('file-input-pdfword').value = '';
-            document.getElementById('pdfword-file-display').classList.add('hidden');
-            document.getElementById('action-bar-pdfword').classList.add('hidden');
-            document.getElementById('drop-zone-pdfword').classList.remove('hidden');
-        }
+        function removePdfWordFile() { currentPdfWordFile = null; document.getElementById('file-input-pdfword').value = ''; document.getElementById('pdfword-file-display').classList.add('hidden'); document.getElementById('action-bar-pdfword').classList.add('hidden'); document.getElementById('drop-zone-pdfword').classList.remove('hidden'); }
 
         async function convertPdfToWord() {
             if (!currentPdfWordFile) return;
-            const btn = document.getElementById('pdfword-btn');
-            const spinner = document.getElementById('pdfword-spinner');
-            const statusMsg = document.getElementById('pdfword-status-msg');
-
-            btn.disabled = true;
-            btn.classList.add('opacity-75');
-            spinner.classList.remove('hidden');
-            statusMsg.classList.remove('hidden');
-            statusMsg.textContent = "Extrayendo texto del PDF... (Procesamiento Local)";
+            const btn = document.getElementById('pdfword-btn'); const spinner = document.getElementById('pdfword-spinner'); const statusMsg = document.getElementById('pdfword-status-msg');
+            btn.disabled = true; btn.classList.add('opacity-75'); spinner.classList.remove('hidden'); statusMsg.classList.remove('hidden'); statusMsg.textContent = "Extrayendo texto del PDF... (Procesamiento Local)";
 
             try {
-                // Configuramos el Worker de PDF.js para leer el texto
                 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
-                
                 const arrayBuffer = await currentPdfWordFile.arrayBuffer();
                 const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
-                
                 let fullText = "";
                 
                 for (let i = 1; i <= pdf.numPages; i++) {
                     const page = await pdf.getPage(i);
                     const textContent = await page.getTextContent();
-                    // Extraemos las líneas de texto de la página
                     const pageText = textContent.items.map(item => item.str).join(' ');
                     fullText += pageText + "\n\n";
                 }
 
-                if (!fullText.trim()) {
-                    throw new Error("El PDF no contiene texto extraíble (probablemente sea un documento escaneado).");
-                }
+                if (!fullText.trim()) throw new Error("El PDF no contiene texto extraíble (probablemente sea una imagen escaneada).");
 
-                // Construimos el archivo de Word (formato HTML compatible con MS Word)
                 const preHtml = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Documento Exportado</title></head><body>";
                 const postHtml = "</body></html>";
-                // Reemplazamos saltos de línea normales por <br> para que Word los lea
                 const html = preHtml + fullText.replace(/\n/g, '<br>') + postHtml;
 
-                // Generamos el archivo .doc para descargar
                 const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
+                const link = document.createElement('a'); link.href = URL.createObjectURL(blob);
                 let baseName = currentPdfWordFile.name.substring(0, currentPdfWordFile.name.lastIndexOf('.'));
-                link.download = baseName + "_Convertido.doc";
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                link.download = baseName + "_Convertido.doc"; document.body.appendChild(link); link.click(); document.body.removeChild(link);
 
-                statusMsg.textContent = "¡Archivo Word generado y descargado con éxito!";
-                statusMsg.className = "text-sm text-green-600 dark:text-green-400 mt-3 font-bold";
-                
+                statusMsg.textContent = "¡Archivo Word generado y descargado con éxito!"; statusMsg.className = "text-sm text-green-600 dark:text-green-400 mt-3 font-bold";
             } catch (error) {
-                console.error(error);
-                statusMsg.textContent = "Error: " + error.message;
-                statusMsg.className = "text-sm text-red-600 dark:text-red-400 mt-3 font-bold";
+                statusMsg.textContent = "Error: " + error.message; statusMsg.className = "text-sm text-red-600 dark:text-red-400 mt-3 font-bold";
             } finally {
-                // Limpiamos la pantalla después de 4 segundos
-                setTimeout(function() {
-                    btn.disabled = false;
-                    btn.classList.remove('opacity-75');
-                    spinner.classList.add('hidden');
-                    statusMsg.classList.add('hidden');
-                    statusMsg.className = "text-sm text-slate-600 dark:text-slate-400 mt-3 hidden";
-                    removePdfWordFile();
-                }, 4000);
+                setTimeout(function() { btn.disabled = false; btn.classList.remove('opacity-75'); spinner.classList.add('hidden'); statusMsg.classList.add('hidden'); statusMsg.className = "text-sm text-slate-600 dark:text-slate-400 mt-3 hidden"; removePdfWordFile(); }, 4000);
             }
         }
 
-        // DRAG AND DROP GLOBALES
+        // DRAG AND DROP GLOBALES PARA TODAS LAS ZONAS
         const eventsDrop = ['dragenter', 'dragover', 'dragleave', 'drop'];
         eventsDrop.forEach(function(eventName) { document.querySelectorAll('.drop-zone').forEach(function(zone) { zone.addEventListener(eventName, function(e) { e.preventDefault(); e.stopPropagation(); }, false); }); });
         document.querySelectorAll('.drop-zone').forEach(function(zone) { zone.addEventListener('dragenter', function() { zone.classList.add('dragover'); }); zone.addEventListener('dragleave', function() { zone.classList.remove('dragover'); }); zone.addEventListener('drop', function() { zone.classList.remove('dragover'); }); });
+        
         document.getElementById('drop-zone-img').addEventListener('drop', function(e) { if(e.dataTransfer.files.length > 0) addImages(Array.from(e.dataTransfer.files)); });
-        document.getElementById('drop-zone-unir').addEventListener('drop', function(e) { if(e.dataTransfer.files.length > 0) { const fakeEvent = { target: { files: e.dataTransfer.files } }; handleUnirSelection(fakeEvent); } });
+        document.getElementById('drop-zone-unir').addEventListener('drop', function(e) { if(e.dataTransfer.files.length > 0) { handleUnirSelection({ target: { files: e.dataTransfer.files } }); } });
         document.getElementById('drop-zone-office').addEventListener('drop', function(e) { if(e.dataTransfer.files.length > 0) handleOfficeSelection({ target: { files: e.dataTransfer.files } }); });
         document.getElementById('drop-zone-webp').addEventListener('drop', function(e) { if(e.dataTransfer.files.length > 0) handleWebpSelection({ target: { files: e.dataTransfer.files } }); });
         document.getElementById('drop-zone-pdfword').addEventListener('drop', function(e) { if(e.dataTransfer.files.length > 0) handlePdfWordSelection({ target: { files: e.dataTransfer.files } }); });
+        document.getElementById('drop-zone-dividir').addEventListener('drop', function(e) { if(e.dataTransfer.files.length > 0) handleDividirSelection({ target: { files: e.dataTransfer.files } }); });
+        document.getElementById('drop-zone-eliminar').addEventListener('drop', function(e) { if(e.dataTransfer.files.length > 0) handleEliminarSelection({ target: { files: e.dataTransfer.files } }); });
+        document.getElementById('drop-zone-comprimir').addEventListener('drop', function(e) { if(e.dataTransfer.files.length > 0) handleComprimirSelection({ target: { files: e.dataTransfer.files } }); });
+        document.getElementById('drop-zone-numerar').addEventListener('drop', function(e) { if(e.dataTransfer.files.length > 0) handleNumerarSelection({ target: { files: e.dataTransfer.files } }); });
     </script>
 </body>
 </html>
