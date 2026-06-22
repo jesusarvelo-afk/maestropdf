@@ -340,28 +340,26 @@
                 <div id="office-section" class="tool-section hidden p-8">
                     <div class="bg-purple-50 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 text-sm p-4 rounded-xl mb-6 flex items-start border border-purple-100 dark:border-purple-800">
                         <i class="fas fa-info-circle mt-1 mr-2 text-purple-600 dark:text-purple-400 text-lg"></i>
-                        <p>Convierte documentos Word (vía motor de Google) e Imágenes JPG/PNG (localmente sin usar datos) a PDF de forma limpia.</p>
+                        <p>Convierte documentos Word e Imágenes JPG/PNG a PDF. <b>Puedes seleccionar varios archivos a la vez y se unirán en un solo PDF.</b></p>
                     </div>
                     <div id="drop-zone-office" class="drop-zone border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 rounded-xl p-10 text-center cursor-pointer hover:border-slate-400 dark:hover:border-slate-500" onclick="document.getElementById('file-input-office').click()">
                         <div class="flex justify-center gap-4 text-slate-400 dark:text-slate-500 text-5xl mb-4">
                             <i class="fas fa-file-word"></i>
                             <i class="fas fa-file-image"></i>
                         </div>
-                        <h3 class="text-lg font-bold text-slate-700 dark:text-white mb-1">Seleccionar Word o Imagen</h3>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">Soportados: .doc, .docx, .jpg, .png</p>
-                        <input type="file" id="file-input-office" accept=".doc,.docx,image/jpeg,image/png,image/jpg" class="hidden" onchange="handleOfficeSelection(event)">
+                        <h3 class="text-lg font-bold text-slate-700 dark:text-white mb-1">Seleccionar Archivos</h3>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Soportados: .doc, .docx, .jpg, .png (Puedes elegir varios)</p>
+                        <!-- AQUI ESTA EL CAMBIO DE MULTIPLE QUE FALTABA -->
+                        <input type="file" id="file-input-office" accept=".doc,.docx,.jpg,.jpeg,.png" multiple class="hidden" onchange="handleOfficeSelection(event)">
                     </div>
-                    <div id="office-file-display" class="mt-6 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 hidden flex items-center justify-between">
-                        <div class="flex items-center">
-                            <i id="office-file-icon" class="fas fa-file-alt text-purple-600 dark:text-purple-400 text-2xl mr-3"></i>
-                            <span id="office-file-name" class="font-medium text-slate-700 dark:text-white">documento.docx</span>
-                        </div>
-                        <button onclick="removeOfficeFile()" class="text-slate-400 hover:text-red-500 transition"><i class="fas fa-times text-lg"></i></button>
+
+                    <div id="office-list-container" class="mt-8 hidden">
+                        <div id="office-file-list" class="space-y-2 max-h-64 overflow-y-auto pr-2"></div>
                     </div>
                     
                     <div id="action-bar-office" class="mt-8 text-center hidden pt-6 border-t border-slate-100 dark:border-slate-700">
                         <div id="office-format-container" class="mb-6 hidden flex-col sm:flex-row justify-center items-center gap-3 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-                            <label class="font-bold text-slate-700 dark:text-slate-300">Tamaño de la página (para imágenes):</label>
+                            <label class="font-bold text-slate-700 dark:text-slate-300">Tamaño para imágenes:</label>
                             <select id="page-size-office" class="border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-white rounded-lg p-2 font-medium outline-none focus:border-blue-500">
                                 <option value="a4">A4 (210 x 297 mm)</option>
                                 <option value="letter">Carta / Letter (8.5 x 11")</option>
@@ -900,79 +898,183 @@
         // 7. LÓGICA DE CONVERTIR A PDF (OFFICE)
         // ==========================================
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyHKE5xramnRZRnpr-YSDWYeSJtY3QEaJdtsfC4pXTrKKYZzZvCM2QdfyFfLki_83B2/exec";
-        let currentOfficeFile = null;
+        let officeFiles = [];
         
         function handleOfficeSelection(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const ext = file.name.split('.').pop().toLowerCase();
-                const validExts = ['doc', 'docx', 'jpg', 'jpeg', 'png'];
-                if (validExts.includes(ext)) {
-                    currentOfficeFile = file; document.getElementById('office-file-name').textContent = file.name;
-                    let iconClass = 'fas fa-file-word text-purple-600 dark:text-purple-400';
-                    const formatContainer = document.getElementById('office-format-container');
-                    if (['jpg', 'jpeg', 'png'].includes(ext)) {
-                        iconClass = 'fas fa-image text-pink-500';
-                        if(formatContainer) { formatContainer.classList.remove('hidden'); formatContainer.classList.add('flex'); }
-                    } else {
-                        if(formatContainer) { formatContainer.classList.add('hidden'); formatContainer.classList.remove('flex'); }
+            const files = event.target.files;
+            if (files && files.length > 0) {
+                Array.from(files).forEach(f => {
+                    const ext = f.name.split('.').pop().toLowerCase();
+                    if (['doc', 'docx', 'jpg', 'jpeg', 'png'].includes(ext)) {
+                        officeFiles.push({ id: Date.now() + Math.random(), file: f });
                     }
-                    document.getElementById('office-file-icon').className = 'text-2xl mr-3 ' + iconClass;
-                    document.getElementById('office-file-display').classList.remove('hidden'); document.getElementById('action-bar-office').classList.remove('hidden'); document.getElementById('drop-zone-office').classList.add('hidden');
-                } else { alert("Formato no válido. Sube un archivo Word (.doc, .docx) o Imagen (.jpg, .png)."); }
+                });
+                renderOfficeList();
+                document.getElementById('file-input-office').value = '';
+            }
+        }
+
+        function renderOfficeList() {
+            const container = document.getElementById('office-file-list');
+            const mainContainer = document.getElementById('office-list-container');
+            const actionContainer = document.getElementById('action-bar-office');
+            const dropZone = document.getElementById('drop-zone-office');
+            
+            container.innerHTML = '';
+            
+            if (officeFiles.length > 0) {
+                mainContainer.classList.remove('hidden'); 
+                actionContainer.classList.remove('hidden');
+                dropZone.classList.add('hidden');
+            } else {
+                mainContainer.classList.add('hidden'); 
+                actionContainer.classList.add('hidden');
+                dropZone.classList.remove('hidden');
+            }
+
+            let hasImages = false;
+
+            officeFiles.forEach((item) => {
+                const ext = item.file.name.split('.').pop().toLowerCase();
+                const isImage = ['jpg', 'jpeg', 'png'].includes(ext);
+                if(isImage) hasImages = true;
+
+                const icon = isImage 
+                    ? '<i class="fas fa-image text-pink-500 text-2xl"></i>' 
+                    : '<i class="fas fa-file-word text-purple-600 dark:text-purple-400 text-2xl"></i>';
+
+                const div = document.createElement('div'); 
+                div.className = 'flex items-center justify-between bg-white dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600 shadow-sm transition-colors'; 
+                
+                div.innerHTML = `
+                    <div class="flex items-center gap-4 w-full overflow-hidden">
+                        ${icon}
+                        <span class="font-medium text-slate-700 dark:text-white truncate w-full text-left">${item.file.name}</span>
+                    </div>
+                    <button onclick="removeOfficeFile('${item.id}', event)" class="text-slate-400 hover:text-red-500 transition-colors ml-4 px-2 py-1">
+                        <i class="fas fa-times text-lg"></i>
+                    </button>
+                `;
+                container.appendChild(div);
+            });
+
+            const formatContainer = document.getElementById('office-format-container');
+            if (hasImages) {
+                formatContainer.classList.remove('hidden');
+                formatContainer.classList.add('flex');
+            } else {
+                formatContainer.classList.add('hidden');
+                formatContainer.classList.remove('flex');
             }
         }
         
-        function removeOfficeFile() { currentOfficeFile = null; document.getElementById('file-input-office').value = ''; document.getElementById('office-file-display').classList.add('hidden'); document.getElementById('action-bar-office').classList.add('hidden'); document.getElementById('drop-zone-office').classList.remove('hidden'); }
+        function removeOfficeFile(id, event) { 
+            if(event) event.stopPropagation(); 
+            officeFiles = officeFiles.filter(f => f.id.toString() !== id.toString()); 
+            renderOfficeList(); 
+        }
         
         async function convertOfficeToPdf() {
-            if (!currentOfficeFile) return; 
-            const btn = document.getElementById('convert-office-btn'); const spinner = document.getElementById('office-spinner'); const statusMsg = document.getElementById('office-status-msg');
-            btn.disabled = true; btn.classList.add('opacity-75'); spinner.classList.remove('hidden'); statusMsg.classList.remove('hidden'); 
-            statusMsg.textContent = "Procesando documento...";
+            if (officeFiles.length === 0) return; 
+            const btn = document.getElementById('convert-office-btn'); 
+            const spinner = document.getElementById('office-spinner'); 
+            const statusMsg = document.getElementById('office-status-msg');
+            
+            btn.disabled = true; btn.classList.add('opacity-75'); 
+            spinner.classList.remove('hidden'); statusMsg.classList.remove('hidden'); 
+            
+            try {
+                const mergedPdf = await PDFLib.PDFDocument.create();
+                const formatSelected = document.getElementById('page-size-office').value;
 
-            const ext = currentOfficeFile.name.split('.').pop().toLowerCase();
-            const isImage = ['jpg', 'jpeg', 'png'].includes(ext);
+                for (let i = 0; i < officeFiles.length; i++) {
+                    const file = officeFiles[i].file;
+                    statusMsg.textContent = `Procesando archivo ${i + 1} de ${officeFiles.length}...`;
+                    
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    const isImage = ['jpg', 'jpeg', 'png'].includes(ext);
 
-            if (isImage) {
-                try {
-                    const pdfDoc = await PDFLib.PDFDocument.create();
-                    const arrayBuffer = await currentOfficeFile.arrayBuffer();
-                    let img;
-                    if (ext === 'jpg' || ext === 'jpeg') { img = await pdfDoc.embedJpg(arrayBuffer); } 
-                    else if (ext === 'png') { img = await pdfDoc.embedPng(arrayBuffer); }
-                    
-                    const formatSelected = document.getElementById('page-size-office').value;
-                    let pageWidth, pageHeight, scale;
-                    if (formatSelected === 'original') { pageWidth = img.width; pageHeight = img.height; scale = 1; } else {
-                        const dims = getPageDimensions(formatSelected); pageWidth = dims[0]; pageHeight = dims[1]; scale = Math.min(pageWidth / img.width, pageHeight / img.height);
-                    }
-                    const page = pdfDoc.addPage([pageWidth, pageHeight]);
-                    page.drawImage(img, { x: (pageWidth - (img.width * scale)) / 2, y: (pageHeight - (img.height * scale)) / 2, width: img.width * scale, height: img.height * scale });
-                    
-                    const pdfBytes = await pdfDoc.save(); const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
-                    let baseName = currentOfficeFile.name.substring(0, currentOfficeFile.name.lastIndexOf('.')); link.download = baseName + ".pdf"; link.click();
-                    
-                    statusMsg.textContent = "¡Imagen convertida a PDF exitosamente!"; statusMsg.className = "text-sm text-green-600 dark:text-green-400 mt-3 font-bold";
-                } catch (error) {
-                    statusMsg.textContent = "Error convirtiendo imagen: " + error.message; statusMsg.className = "text-sm text-red-600 dark:text-red-400 mt-3 font-bold";
-                }
-                setTimeout(function() { btn.disabled = false; btn.classList.remove('opacity-75'); spinner.classList.add('hidden'); statusMsg.classList.add('hidden'); statusMsg.className = "text-sm text-slate-600 dark:text-slate-400 mt-3 hidden"; removeOfficeFile(); }, 3000);
-            } else {
-                const reader = new FileReader(); reader.readAsDataURL(currentOfficeFile);
-                reader.onload = async function() {
-                    try {
-                        const base64Data = reader.result.split(',')[1];
-                        const response = await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ fileName: currentOfficeFile.name, fileBase64: base64Data }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
+                    if (isImage) {
+                        const arrayBuffer = await file.arrayBuffer();
+                        let img;
+                        if (ext === 'jpg' || ext === 'jpeg') { img = await mergedPdf.embedJpg(arrayBuffer); } 
+                        else if (ext === 'png') { img = await mergedPdf.embedPng(arrayBuffer); }
+                        
+                        let pageWidth, pageHeight, scale;
+                        if (formatSelected === 'original') {
+                            pageWidth = img.width; pageHeight = img.height; scale = 1;
+                        } else {
+                            const dims = getPageDimensions(formatSelected);
+                            pageWidth = dims[0]; pageHeight = dims[1];
+                            scale = Math.min(pageWidth / img.width, pageHeight / img.height);
+                        }
+
+                        const page = mergedPdf.addPage([pageWidth, pageHeight]);
+                        page.drawImage(img, { 
+                            x: (pageWidth - (img.width * scale)) / 2, 
+                            y: (pageHeight - (img.height * scale)) / 2, 
+                            width: img.width * scale, 
+                            height: img.height * scale 
+                        });
+                    } else {
+                        // Flujo Word a PDF usando el Google Script
+                        const reader = new FileReader();
+                        const base64Data = await new Promise((resolve) => {
+                            reader.onload = () => resolve(reader.result.split(',')[1]);
+                            reader.readAsDataURL(file);
+                        });
+                        
+                        const response = await fetch(GOOGLE_SCRIPT_URL, { 
+                            method: 'POST', 
+                            body: JSON.stringify({ fileName: file.name, fileBase64: base64Data }), 
+                            headers: { 'Content-Type': 'text/plain;charset=utf-8' } 
+                        });
                         const result = await response.json();
+                        
                         if (result.success) {
-                            const link = document.createElement('a'); link.href = "data:application/pdf;base64," + result.pdfBase64;
-                            let originalName = currentOfficeFile.name; let newName = originalName.substring(0, originalName.lastIndexOf('.')) + ".pdf"; link.download = newName; link.click();
-                            statusMsg.textContent = "¡Conversión completada exitosamente!"; statusMsg.className = "text-sm text-green-600 dark:text-green-400 mt-3 font-bold";
-                        } else { throw new Error(result.error); }
-                    } catch (error) { statusMsg.textContent = "Error del servidor: " + error.message; statusMsg.className = "text-sm text-red-600 dark:text-red-400 mt-3 font-bold"; }
-                    setTimeout(function() { btn.disabled = false; btn.classList.remove('opacity-75'); spinner.classList.add('hidden'); statusMsg.classList.add('hidden'); statusMsg.className = "text-sm text-slate-600 dark:text-slate-400 mt-3 hidden"; removeOfficeFile(); }, 4000);
-                };
+                            // Convertimos el base64 de vuelta a binario de manera segura
+                            const binaryString = window.atob(result.pdfBase64);
+                            const len = binaryString.length;
+                            const bytes = new Uint8Array(len);
+                            for (let j = 0; j < len; j++) { bytes[j] = binaryString.charCodeAt(j); }
+                            
+                            // Insertamos el PDF de Word generado en nuestro documento maestro
+                            const tempPdf = await PDFLib.PDFDocument.load(bytes);
+                            const copiedPages = await mergedPdf.copyPages(tempPdf, tempPdf.getPageIndices());
+                            copiedPages.forEach(page => mergedPdf.addPage(page));
+                        } else { 
+                            throw new Error(result.error); 
+                        }
+                    }
+                }
+                
+                statusMsg.textContent = "Finalizando documento conjunto...";
+                const finalBytes = await mergedPdf.save();
+                const link = document.createElement('a'); 
+                link.href = URL.createObjectURL(new Blob([finalBytes], { type: 'application/pdf' }));
+                
+                if (officeFiles.length === 1) {
+                    let baseName = officeFiles[0].file.name.substring(0, officeFiles[0].file.name.lastIndexOf('.'));
+                    link.download = baseName + ".pdf";
+                } else {
+                    link.download = "Archivos_Convertidos_Unidos.pdf";
+                }
+                
+                link.click();
+                statusMsg.textContent = "¡Conversión completada exitosamente!"; 
+                statusMsg.className = "text-sm text-green-600 dark:text-green-400 mt-3 font-bold";
+                
+            } catch (error) {
+                statusMsg.textContent = "Error: " + error.message; 
+                statusMsg.className = "text-sm text-red-600 dark:text-red-400 mt-3 font-bold";
+            } finally {
+                setTimeout(function() { 
+                    btn.disabled = false; btn.classList.remove('opacity-75'); 
+                    spinner.classList.add('hidden'); statusMsg.classList.add('hidden'); 
+                    statusMsg.className = "text-sm text-slate-600 dark:text-slate-400 mt-3 hidden"; 
+                    officeFiles = [];
+                    renderOfficeList();
+                }, 4000);
             }
         }
 
