@@ -869,7 +869,26 @@
             if(selectedImages.length > 0) { document.getElementById('action-bar-img').classList.remove('hidden'); } else { document.getElementById('action-bar-img').classList.add('hidden'); }
         }
         function removeImage(id) { selectedImages = selectedImages.filter(function(img) { return img.id.toString() !== id.toString(); }); renderImageList(); }
-        async function startCamera() { try { videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }); document.getElementById('video-element').srcObject = videoStream; document.getElementById('camera-container').style.display = 'block'; } catch (err) { alert("Error al acceder a la cámara."); } }
+        async function startCamera() { 
+            try { 
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    alert("Tu navegador no soporta el acceso a la cámara o no estás en una conexión segura (HTTPS).");
+                    return;
+                }
+                // Intenta usar la cámara trasera primero
+                try {
+                    videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }); 
+                } catch (fallbackErr) {
+                    // Si falla (ej. en PC), usa cualquier cámara disponible
+                    videoStream = await navigator.mediaDevices.getUserMedia({ video: true }); 
+                }
+                document.getElementById('video-element').srcObject = videoStream; 
+                document.getElementById('camera-container').style.display = 'block'; 
+            } catch (err) { 
+                console.error("Error cámara:", err);
+                alert("Error al acceder a la cámara: " + err.message + "\n\nPor favor, verifica que le diste permiso al navegador para usar la cámara."); 
+            } 
+        }
         function closeCamera() { if (videoStream) { videoStream.getTracks().forEach(function(track) { track.stop(); }); } document.getElementById('camera-container').style.display = 'none'; }
         function takePhoto() {
             const video = document.getElementById('video-element'); const canvas = document.createElement('canvas'); canvas.width = video.videoWidth; canvas.height = video.videoHeight;
